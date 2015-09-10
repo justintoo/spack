@@ -1,4 +1,5 @@
 from spack import *
+import os
 
 class Boost(Package):
     """Boost provides free peer-reviewed portable C++ source
@@ -39,6 +40,12 @@ class Boost(Package):
     version('1.34.1', '2d938467e8a448a2c9763e0a9f8ca7e5')
     version('1.34.0', 'ed5b9291ffad776f8757a916e1726ad0')
 
+    #-------------------------------------------------------------
+    # Variants
+    #-------------------------------------------------------------
+    depends_on('bzip2')
+    depends_on('python')
+    depends_on('zlib')
 
     def url_for_version(self, version):
         """Handle Boost's weird URLs, which write the version two different ways."""
@@ -50,6 +57,8 @@ class Boost(Package):
 
 
     def install(self, spec, prefix):
+        bzip2 = spec['bzip2']
+
         bootstrap = Executable('./bootstrap.sh')
         bootstrap()
 
@@ -59,4 +68,7 @@ class Boost(Package):
         b2 = Executable(b2name)
         b2('install',
            '-j %s' % make_jobs,
-           '--prefix=%s' % prefix)
+           '--prefix=%s' % prefix,
+           'cxxflags="-I%s"' % bzip2.prefix.include,
+           'linkflags="-L%s"' % bzip2.prefix.lib)
+

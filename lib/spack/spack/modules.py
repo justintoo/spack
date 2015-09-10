@@ -141,6 +141,12 @@ class EnvModule(object):
                 if site_packages:
                     add_path('PERL5LIB', site_packages[0])
 
+            if 'jdk' in self.spec:
+                jdk = self.spec['jdk']
+                jdk_server_libdir = glob(join_path(jdk.prefix, "jre/lib/*/server"))
+                add_path('LD_LIBRARY_PATH', jdk_server_libdir[0])
+                add_path('LD_LIBRARY_PATH', jdk.prefix.lib)
+
             if self.spec.package.extends(spack.spec.Spec('ruby')):
               add_path('GEM_PATH', self.spec.prefix)
 

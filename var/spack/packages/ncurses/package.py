@@ -12,20 +12,24 @@ class Ncurses(Package):
     version('5.9', '8cb9c412e5f2d96bc6f459aa8c6282a1',
             url='http://ftp.gnu.org/pub/gnu/ncurses/ncurses-5.9.tar.gz')
 
-    def install(self, spec, prefix):
-        configure("--prefix=%s" % prefix,
-                  "--with-shared",
-                  "--enable-widec",
-                  "--disable-pc-files",
-                  "--without-ada")
-        make()
-        make("install")
+    # --enable-widec only installs libncursesw and not libncurses :(
+    variant('widec', default=True, description="enable wide characters")
 
-        configure("--prefix=%s" % prefix,
-                  "--with-shared",
-                  "--disable-widec",
-                  "--disable-pc-files",
-                  "--without-ada")
+    def install(self, spec, prefix):
+        #---------------------------------------------------------
+        # Configuration Options
+        #---------------------------------------------------------
+        configure_args = [
+            "--prefix=%s" % prefix,
+            "--with-shared",
+            "--disable-pc-files",
+            "--without-ada"
+            ]
+
+        if '+widec' in spec:
+            configure_args.append('--enable-widec')
+
+        configure(*configure_args)
         make()
         make("install")
 

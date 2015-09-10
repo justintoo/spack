@@ -12,6 +12,14 @@ class Bzip2(Package):
 
     version('1.0.6', '00b516f4704d4a7cb50a1d97e6e8e15b')
 
+    #-------------------------------------------------------------
+    # Patches
+    #-------------------------------------------------------------
+    patch('add-fpic-to-makefile.patch')
+
+    #-------------------------------------------------------------
+    # Install
+    #-------------------------------------------------------------
     def install(self, spec, prefix):
         # No configure system -- have to filter the makefile for this package.
         filter_file(r'CC=gcc', 'CC=cc', 'Makefile', string=True)
