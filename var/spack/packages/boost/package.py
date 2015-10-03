@@ -39,6 +39,7 @@ class Boost(Package):
     version('1.34.1', '2d938467e8a448a2c9763e0a9f8ca7e5')
     version('1.34.0', 'ed5b9291ffad776f8757a916e1726ad0')
 
+    variant('static', default=False, description="build static libraries")
 
     def url_for_version(self, version):
         """Handle Boost's weird URLs, which write the version two different ways."""
@@ -56,7 +57,21 @@ class Boost(Package):
         # b2 used to be called bjam, before 1.47 (sigh)
         b2name = './b2' if spec.satisfies('@1.47:') else './bjam'
 
-        b2 = Executable(b2name)
-        b2('install',
+        #---------------------------------------------------------
+        # Configuration Options
+        #---------------------------------------------------------
+        b2_args = [
+           'install',
            '-j %s' % make_jobs,
-           '--prefix=%s' % prefix)
+           '--prefix=%s' % prefix
+        ]
+
+        if '+static' in spec:
+            b2_args.append('variant=release')
+            b2_args.append('link=static')
+            b2_args.append('runtime-link=static')
+            b2_args.append('--layout=versioned')
+
+        b2 = Executable(b2name)
+        b2(*b2_args)
+)
