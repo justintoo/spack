@@ -10,18 +10,18 @@ class Rose(Package):
        (Developed at Lawrence Livermore National Lab)"""
 
     homepage = "http://rosecompiler.org/"
-    url      = "https://github.com/rose-compiler/rose-develop"
+    url      = "https://github.com/rose-compiler/rose"
 
-    version('master', commit='65884c443a04d04d5ec81cd01adedff0bcb530a4', git='https://github.com/rose-compiler/rose-develop.git')
+    version('0.9.7', git='https://github.com/rose-compiler/rose.git', tag='v0.9.7')
 
     depends_on("autoconf@2.69")
     depends_on("automake@1.14")
     depends_on("libtool@2.4")
-    depends_on("boost@1.57.0 %gcc@4.8.1")
+    depends_on("boost@1.59.0 %gcc@4.9.3")
 
     def validate_toolchain(self, spec):
-        if not spec.satisfies("%gcc@4.8.1"):
-            raise Exception("You are trying to use an unsupported compiler version to compile ROSE. The ROSE package currently only supports package compilation with GCC 4.8.1" % (gcc, gcc_version))
+        if not spec.satisfies("%gcc@4.9.3"):
+            raise Exception("You are trying to use an unsupported compiler version to compile ROSE. The ROSE package currently only supports package compilation with GCC 4.9.3" % (gcc, gcc_version))
 
     def install(self, spec, prefix):
         self.validate_toolchain(spec)
@@ -40,6 +40,7 @@ class Rose(Package):
                       "--without-java",
                       "--with-boost=" + boost.prefix,
                       "--disable-boost-version-check",
+                      "--disable-gcc-version-check",
                       "--enable-languages=c,c++,fortran,binaries")
             make("install-core")
             make("check")
