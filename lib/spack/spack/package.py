@@ -1,26 +1,26 @@
 ##############################################################################
-# Copyright (c) 2013, Lawrence Livermore National Security, LLC.
+# Copyright (c) 2013-2016, Lawrence Livermore National Security, LLC.
 # Produced at the Lawrence Livermore National Laboratory.
 #
 # This file is part of Spack.
-# Written by Todd Gamblin, tgamblin@llnl.gov, All rights reserved.
+# Created by Todd Gamblin, tgamblin@llnl.gov, All rights reserved.
 # LLNL-CODE-647188
 #
 # For details, see https://github.com/llnl/spack
 # Please also see the LICENSE file for our notice and the LGPL.
 #
 # This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License (as published by
-# the Free Software Foundation) version 2.1 dated February 1999.
+# it under the terms of the GNU Lesser General Public License (as
+# published by the Free Software Foundation) version 2.1, February 1999.
 #
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the IMPLIED WARRANTY OF
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the terms and
-# conditions of the GNU General Public License for more details.
+# conditions of the GNU Lesser General Public License for more details.
 #
-# You should have received a copy of the GNU Lesser General Public License
-# along with this program; if not, write to the Free Software Foundation,
-# Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+# You should have received a copy of the GNU Lesser General Public
+# License along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 ##############################################################################
 """
 This is where most of the action happens in Spack.
@@ -375,12 +375,38 @@ class Package(object):
         if not hasattr(self, 'list_depth'):
             self.list_depth = 1
 
+        # Set default licensing information
+        if not hasattr(self, 'license_required'):
+            self.license_required = False
+
+        if not hasattr(self, 'license_comment'):
+            self.license_comment = '#'
+
+        if not hasattr(self, 'license_files'):
+            self.license_files = []
+
+        if not hasattr(self, 'license_vars'):
+            self.license_vars = []
+
+        if not hasattr(self, 'license_url'):
+            self.license_url = None
+
         # Set up some internal variables for timing.
         self._fetch_time = 0.0
         self._total_time = 0.0
 
         if self.is_extension:
             spack.repo.get(self.extendee_spec)._check_extendable()
+
+    @property
+    def global_license_file(self):
+        """Returns the path where a global license file should be stored."""
+        if not self.license_files:
+            return
+        spack_root = ancestor(__file__, 4)
+        global_license_dir = join_path(spack_root, 'etc', 'spack', 'licenses')
+        return join_path(global_license_dir, self.name,
+                         os.path.basename(self.license_files[0]))
 
     @property
     def version(self):
@@ -883,6 +909,7 @@ class Package(object):
         def build_process():
             """Forked for each build. Has its own process and python
                module space set up by build_environment.fork()."""
+
             start_time = time.time()
             if not fake:
                 if not skip_patch:
@@ -1322,11 +1349,9 @@ class Package(object):
     def rpath(self):
         """Get the rpath this package links with, as a list of paths."""
         rpaths = [self.prefix.lib, self.prefix.lib64]
-        rpaths.extend(d.prefix.lib
-                      for d in self.spec.traverse(root=False)
+        rpaths.extend(d.prefix.lib for d in self.spec.traverse(root=False)
                       if os.path.isdir(d.prefix.lib))
-        rpaths.extend(d.prefix.lib64
-                      for d in self.spec.traverse(root=False)
+        rpaths.extend(d.prefix.lib64 for d in self.spec.traverse(root=False)
                       if os.path.isdir(d.prefix.lib64))
         return rpaths
 
