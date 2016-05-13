@@ -9,8 +9,8 @@ class Openssl(Package):
        toolkit implementing the Secure Sockets Layer (SSL v2/v3) and
        Transport Layer Security (TLS v1) protocols as well as a
        full-strength general purpose cryptography library."""
-    homepage = "http://www.openssl.org"
-    url      = "http://www.openssl.org/source/openssl-1.0.1h.tar.gz"
+    homepage = "https://www.openssl.org"
+    url      = "https://www.openssl.org/source/openssl-1.0.1h.tar.gz"
 
     version('1.0.1h', '8d6d684a9430d5cc98a62a5d8fbda8cf')
     version('1.0.1r', '1abd905e079542ccae948af37e393d28')
@@ -29,8 +29,8 @@ class Openssl(Package):
         # Same idea, but just to avoid issuing the same message multiple times
         warnings_given_to_user = getattr(Openssl, '_warnings_given', {})
         if openssl_url is None:
-            latest = 'http://www.openssl.org/source/openssl-{version}.tar.gz'
-            older = 'http://www.openssl.org/source/old/{version_number}/openssl-{version_full}.tar.gz'
+            latest = 'https://www.openssl.org/source/openssl-{version}.tar.gz'
+            older = 'https://www.openssl.org/source/old/{version_number}/openssl-{version_full}.tar.gz'
             # Try to use the url where the latest tarballs are stored. If the url does not exist (404), then
             # return the url for older format
             version_number = '.'.join([str(x) for x in version[:-1]])

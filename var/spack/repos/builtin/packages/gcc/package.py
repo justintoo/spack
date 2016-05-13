@@ -49,7 +49,7 @@ class Gcc(Package):
 
     variant('gold', default=True, description="Build the gold linker plugin for ld-based LTO")
 
-    depends_on("mpfr")
+    depends_on("mpfr@3.1.4")
     depends_on("gmp")
     depends_on("mpc", when='@4.5:')
     depends_on("isl", when='@5.0:')

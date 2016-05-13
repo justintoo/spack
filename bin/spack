@@ -147,6 +147,7 @@ def main():
     if args.insecure:
         tty.warn("You asked for --insecure, which does not check SSL certificates.")
         spack.curl.add_default_arg('-k')
+        spack.curl.add_default_arg('--tlsv1.2')
 
     # Try to load the particular command asked for and run it
     command = spack.cmd.get_command(args.command)
