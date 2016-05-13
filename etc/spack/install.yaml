@@ -4,5 +4,5 @@
 # Changes to this file will affect all users of this spack install
 # -------------------------------------------------------------------------
 install:
-    path: $spack/opt/spack
+    path: /collab/usr/global/tools/rose/release/pre-alpha
     layout : YamlDirectoryLayout
