@@ -22,18 +22,14 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 ##############################################################################
-import os
-import unittest
 import shutil
 import tempfile
 
-from llnl.util.filesystem import *
-
 import spack
-from spack.stage import Stage
-from spack.fetch_strategy import URLFetchStrategy, FetchStrategyComposite
+import spack.install_area
+from llnl.util.filesystem import *
 from spack.directory_layout import YamlDirectoryLayout
-from spack.util.executable import which
+from spack.fetch_strategy import URLFetchStrategy, FetchStrategyComposite
 from spack.test.mock_packages_test import *
 from spack.test.mock_repo import MockArchive
 
@@ -53,9 +49,8 @@ class InstallTest(MockPackagesTest):
         # Use a fake install directory to avoid conflicts bt/w
         # installed pkgs and mock packages.
         self.tmpdir = tempfile.mkdtemp()
-        self.orig_layout = spack.install_layout
-        spack.install_layout = YamlDirectoryLayout(self.tmpdir)
-
+        self.orig_layout = spack.install_area.layout
+        spack.install_area.layout = YamlDirectoryLayout(self.tmpdir)
 
     def tearDown(self):
         super(InstallTest, self).tearDown()
@@ -65,11 +60,16 @@ class InstallTest(MockPackagesTest):
         spack.do_checksum = True
 
         # restore spack's layout.
-        spack.install_layout = self.orig_layout
+        spack.install_area.layout = self.orig_layout
         shutil.rmtree(self.tmpdir, ignore_errors=True)
 
+    def fake_fetchify(self, pkg):
+        """Fake the URL for a package so it downloads from a file."""
+        fetcher = FetchStrategyComposite()
+        fetcher.append(URLFetchStrategy(self.repo.url))
+        pkg.fetcher = fetcher
 
-    def test_install_and_uninstall(self):
+    def ztest_install_and_uninstall(self):
         # Get a basic concrete spec for the trivial install package.
         spec = Spec('trivial_install_test_package')
         spec.concretize()
@@ -78,15 +78,24 @@ class InstallTest(MockPackagesTest):
         # Get the package
         pkg = spack.repo.get(spec)
 
-        # Fake the URL for the package so it downloads from a file.
-
-        fetcher = FetchStrategyComposite()
-        fetcher.append(URLFetchStrategy(self.repo.url))
-        pkg.fetcher = fetcher
+        self.fake_fetchify(pkg)
 
         try:
             pkg.do_install()
             pkg.do_uninstall()
+        except Exception, e:
+            pkg.remove_prefix()
+            raise
+
+    def test_install_area(self):
+        spec = Spec('cmake-client').concretized()
+
+        for s in spec.traverse():
+            self.fake_fetchify(s.package)
+
+        pkg = spec.package
+        try:
+            pkg.do_install()
         except Exception, e:
             pkg.remove_prefix()
             raise

@@ -30,10 +30,12 @@ import llnl.util.tty as tty
 
 import spack
 import spack.cmd
+import spack.install_area
 from spack.cmd.edit import edit_package
 from spack.stage import DIYStage
 
 description = "Do-It-Yourself: build from an existing source directory."
+
 
 def setup_parser(subparser):
     subparser.add_argument(
@@ -45,6 +47,9 @@ def setup_parser(subparser):
     subparser.add_argument(
         '--skip-patch', action='store_true',
         help="Skip patching for the DIY build.")
+    subparser.add_argument(
+        '-q', '--quiet', action='store_true', dest='quiet',
+        help="Do not display verbose build output while installing.")
     subparser.add_argument(
         'spec', nargs=argparse.REMAINDER,
         help="specs to use for install.  Must contain package AND verison.")
@@ -59,7 +64,7 @@ def diy(self, args):
         tty.die("spack diy only takes one spec.")
 
     # Take a write lock before checking for existence.
-    with spack.installed_db.write_transaction():
+    with spack.install_area.db.write_transaction():
         spec = specs[0]
         if not spack.repo.exists(spec.name):
             tty.warn("No such package: %s" % spec.name)
@@ -72,15 +77,17 @@ def diy(self, args):
                 edit_package(spec.name, spack.repo.first_repo(), None, True)
                 return
 
-        if not spec.version.concrete:
-            tty.die("spack diy spec must have a single, concrete version.")
+        if not spec.versions.concrete:
+            tty.die("spack diy spec must have a single, concrete version. " +
+                    "Did you forget a package version number?")
 
         spec.concretize()
         package = spack.repo.get(spec)
 
         if package.installed:
             tty.error("Already installed in %s" % package.prefix)
-            tty.msg("Uninstall or try adding a version suffix for this DIY build.")
+            tty.msg("Uninstall or try adding a version suffix " +
+                    "for this DIY build.")
             sys.exit(1)
 
         # Forces the build to run out of the current directory.
@@ -92,4 +99,5 @@ def diy(self, args):
         package.do_install(
             keep_prefix=args.keep_prefix,
             ignore_deps=args.ignore_deps,
+            verbose=not args.quiet,
             keep_stage=True)   # don't remove source dir for DIY.

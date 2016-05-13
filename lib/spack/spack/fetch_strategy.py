@@ -82,7 +82,6 @@ class FetchStrategy(object):
 
     class __metaclass__(type):
         """This metaclass registers all fetch strategies in a list."""
-
         def __init__(cls, name, bases, dict):
             type.__init__(cls, name, bases, dict)
             if cls.enabled: all_strategies.append(cls)
@@ -145,6 +144,8 @@ class URLFetchStrategy(FetchStrategy):
         self.digest = kwargs.get('md5', None)
         if not self.digest: self.digest = digest
 
+        self.expand_archive = kwargs.get('expand', True)
+
         if not self.url:
             raise ValueError("URLFetchStrategy requires a url for fetching.")
 
@@ -153,15 +154,29 @@ class URLFetchStrategy(FetchStrategy):
         self.stage.chdir()
 
         if self.archive_file:
-            tty.msg("Already downloaded %s." % self.archive_file)
+            tty.msg("Already downloaded %s" % self.archive_file)
             return
+
+        possible_files = self.stage.expected_archive_files
+        save_file = None
+        partial_file = None
+        if possible_files:
+            save_file = self.stage.expected_archive_files[0]
+            partial_file = self.stage.expected_archive_files[0] + '.part'
 
         tty.msg("Trying to fetch from %s" % self.url)
 
-        curl_args = ['-O',  # save file to disk
+        if partial_file:
+            save_args = ['-C', '-',          # continue partial downloads
+                         '-o', partial_file] # use a .part file
+        else:
+            save_args = ['-O']
+
+        curl_args = save_args + [
                      '-f',  # fail on >400 errors
                      '-D', '-',  # print out HTML headers
-                     '-L', self.url, ]
+                     '-L',  # resolve 3xx redirects
+                     self.url, ]
 
         if sys.stdout.isatty():
             curl_args.append('-#')  # status bar when using a tty
@@ -176,6 +191,9 @@ class URLFetchStrategy(FetchStrategy):
             # clean up archive on failure.
             if self.archive_file:
                 os.remove(self.archive_file)
+
+            if partial_file and os.path.exists(partial_file):
+                os.remove(partial_file)
 
             if spack.curl.returncode == 22:
                 # This is a 404.  Curl will print the error.
@@ -208,6 +226,9 @@ class URLFetchStrategy(FetchStrategy):
                      "'spack clean <package>' to remove the bad archive, then fix",
                      "your internet gateway issue and install again.")
 
+        if save_file:
+            os.rename(partial_file, save_file)
+
         if not self.archive_file:
             raise FailedDownloadError(self.url)
 
@@ -218,6 +239,10 @@ class URLFetchStrategy(FetchStrategy):
 
     @_needs_stage
     def expand(self):
+        if not self.expand_archive:
+            tty.msg("Skipping expand step for %s" % self.archive_file)
+            return
+
         tty.msg("Staging archive: %s" % self.archive_file)
 
         self.stage.chdir()
@@ -275,8 +300,8 @@ class URLFetchStrategy(FetchStrategy):
         checker = crypto.Checker(self.digest)
         if not checker.check(self.archive_file):
             raise ChecksumError(
-                    "%s checksum failed for %s." % (checker.hash_name, self.archive_file),
-                    "Expected %s but got %s." % (self.digest, checker.sum))
+                    "%s checksum failed for %s" % (checker.hash_name, self.archive_file),
+                    "Expected %s but got %s" % (self.digest, checker.sum))
 
     @_needs_stage
     def reset(self):
@@ -284,8 +309,14 @@ class URLFetchStrategy(FetchStrategy):
         if not self.archive_file:
             raise NoArchiveFileError("Tried to reset URLFetchStrategy before fetching",
                                      "Failed on reset() for URL %s" % self.url)
-        if self.stage.source_path:
-            shutil.rmtree(self.stage.source_path, ignore_errors=True)
+
+        # Remove everythigng but the archive from the stage
+        for filename in os.listdir(self.stage.path):
+            abspath = os.path.join(self.stage.path, filename)
+            if abspath != self.archive_file:
+                shutil.rmtree(abspath, ignore_errors=True)
+
+        # Expand the archive again
         self.expand()
 
     def __repr__(self):
@@ -312,7 +343,7 @@ class VCSFetchStrategy(FetchStrategy):
         # Ensure that there's only one of the rev_types
         if sum(k in kwargs for k in rev_types) > 1:
             raise FetchStrategyError(
-                    "Supply only one of %s to fetch with %s." % (
+                    "Supply only one of %s to fetch with %s" % (
                         comma_or(rev_types), name))
 
         # Set attributes for each rev type.
@@ -321,7 +352,7 @@ class VCSFetchStrategy(FetchStrategy):
 
     @_needs_stage
     def check(self):
-        tty.msg("No checksum needed when fetching with %s." % self.name)
+        tty.msg("No checksum needed when fetching with %s" % self.name)
 
     @_needs_stage
     def expand(self):
@@ -395,7 +426,7 @@ class GitFetchStrategy(VCSFetchStrategy):
         self.stage.chdir()
 
         if self.stage.source_path:
-            tty.msg("Already fetched %s." % self.stage.source_path)
+            tty.msg("Already fetched %s" % self.stage.source_path)
             return
 
         args = []
@@ -505,7 +536,7 @@ class SvnFetchStrategy(VCSFetchStrategy):
         self.stage.chdir()
 
         if self.stage.source_path:
-            tty.msg("Already fetched %s." % self.stage.source_path)
+            tty.msg("Already fetched %s" % self.stage.source_path)
             return
 
         tty.msg("Trying to check out svn repository: %s" % self.url)
@@ -584,7 +615,7 @@ class HgFetchStrategy(VCSFetchStrategy):
         self.stage.chdir()
 
         if self.stage.source_path:
-            tty.msg("Already fetched %s." % self.stage.source_path)
+            tty.msg("Already fetched %s" % self.stage.source_path)
             return
 
         args = []
