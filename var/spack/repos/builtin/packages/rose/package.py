@@ -37,6 +37,7 @@ class Rose(Package):
     homepage = "http://rosecompiler.org/"
     url      = "https://github.com/rose-compiler/rose-develop"
 
+    version('0.9.7.21', commit='8924055d0f1e01ba37053fe5068a7989ff2c7874', git='https://github.com/rose-compiler/rose-develop.git')
     version('0.9.7.16', commit='b2cc9cf0996c6b2598919e5cdcd88c1cd1806030', git='https://github.com/rose-compiler/rose-develop.git')
 
     depends_on("autoconf@2.69")
