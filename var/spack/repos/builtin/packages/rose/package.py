@@ -73,5 +73,6 @@ class Rose(Package):
                       "--disable-boost-version-check",
                       "--enable-languages=c,c++,fortran,binaries")
             make("install-core")
+            make("install", "-C", "bin/")
             #make("check")
 
