@@ -45,11 +45,11 @@ class Rose(Package):
     depends_on("autoconf@2.69")
     depends_on("automake@1.14")
     depends_on("libtool@2.4")
-    depends_on("boost@1.56.0 %gcc@4.8.5")
+    depends_on("__BOOST_VERSION__")
 
     def validate_toolchain(self, spec):
-        if not spec.satisfies("%gcc@4.8.5"):
-            raise Exception("You are trying to use an unsupported compiler version to compile ROSE. The ROSE package currently only supports package compilation with GCC 4.8.5" % (gcc, gcc_version))
+        if not spec.satisfies("%gcc@4.8.5") or not spec.satisfies("%intel@16.0.3"):
+            raise Exception("You are trying to use an unsupported compiler version to compile ROSE. The ROSE package currently only supports package compilation with GCC 4.8.5 or Intel 16.0.3")
 
     def install(self, spec, prefix):
         self.validate_toolchain(spec)
