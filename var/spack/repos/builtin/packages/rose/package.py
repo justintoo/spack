@@ -54,6 +54,10 @@ class Rose(Package):
     def install(self, spec, prefix):
         self.validate_toolchain(spec)
 
+        # Checkout EDG submodule
+        git = which('git')
+        git('submodule', 'update', '--init')
+
         # Bootstrap with autotools
         bash = which('bash')
         bash('build')
