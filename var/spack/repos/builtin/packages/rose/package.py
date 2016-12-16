@@ -71,7 +71,7 @@ class Rose(Package):
 
             configure = Executable(os.path.abspath('../configure'))
             configure("--prefix=" + prefix,
-                      "--enable-edg_version=4.9",
+                      "--enable-edg_version=4.12",
                       "--without-java",
                       "--with-boost=" + boost.prefix,
                       "--with-alternate_backend_C_compiler=" + str(mpicc),
