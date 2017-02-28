@@ -78,7 +78,9 @@ class Rose(Package):
                       "--with-alternate_backend_Cxx_compiler=" + str(mpicxx),
                       "--disable-boost-version-check",
                       "--enable-languages=c,c++,fortran,binaries")
-            make("install-core")
+            #make("install-core")
+            srun = which('srun')
+            srun('-ppdebug', 'make', '-j', 'install-core')
             make("install", "-C", "bin/")
             #make("check")
 
