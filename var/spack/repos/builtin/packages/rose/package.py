@@ -22,12 +22,12 @@
 # License along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 ##############################################################################
-# -----------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 # Author: Justin Too <too1@llnl.gov>
-# -----------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 
+import os
 from spack import *
-
 
 class Rose(Package):
     """A compiler infrastructure to build source-to-source program
@@ -35,30 +35,52 @@ class Rose(Package):
        (Developed at Lawrence Livermore National Lab)"""
 
     homepage = "http://rosecompiler.org/"
-    url      = "https://github.com/rose-compiler/edg4x-rose"
+    url      = "https://github.com/rose-compiler/rose-develop"
 
-    version('master', branch='master',
-            git='https://github.com/rose-compiler/edg4x-rose.git')
+    version('0.9.7.21', commit='8924055d0f1e01ba37053fe5068a7989ff2c7874', git='https://github.com/rose-compiler/rose-develop.git')
+    version('0.9.7.16', commit='b2cc9cf0996c6b2598919e5cdcd88c1cd1806030', git='https://github.com/rose-compiler/rose-develop.git')
+    # Placeholder for automated testing
+    version('__ROSE_VERSION__', commit='__ROSE_COMMIT__', git='rose-dev@rosecompiler1.llnl.gov:rose/scratch/rose.git')
 
-    patch('add_spack_compiler_recognition.patch')
+    depends_on("autoconf@2.69")
+    depends_on("automake@1.14")
+    depends_on("libtool@2.4")
+    depends_on("__BOOST_VERSION__")
 
-    depends_on("autoconf@2.69", type='build')
-    depends_on("automake@1.14", type='build')
-    depends_on("libtool@2.4", type='build')
-    depends_on("boost@1.54.0")
-    depends_on("jdk@8u25-linux-x64")
+    def validate_toolchain(self, spec):
+        if not (spec.satisfies("%gcc@4.8.5") or spec.satisfies("%intel@16.0.3")):
+            raise Exception("You are trying to use an unsupported compiler version to compile ROSE. The ROSE package currently only supports package compilation with GCC 4.8.5 or Intel 16.0.3")
 
     def install(self, spec, prefix):
+        self.validate_toolchain(spec)
+
+        # Checkout EDG submodule
+        git = which('git')
+        git('submodule', 'update', '--init')
+
         # Bootstrap with autotools
         bash = which('bash')
         bash('build')
+
+        mpicc = which('mpicc')
+        mpicxx = which('mpic++')
 
         # Configure, compile & install
         with working_dir('rose-build', create=True):
             boost = spec['boost']
 
-            configure = Executable('../configure')
+            configure = Executable(os.path.abspath('../configure'))
             configure("--prefix=" + prefix,
+                      "--enable-edg_version=4.12",
+                      "--without-java",
                       "--with-boost=" + boost.prefix,
-                      "--disable-boost-version-check")
-            make("install-core")
+                      "--with-alternate_backend_C_compiler=" + str(mpicc),
+                      "--with-alternate_backend_Cxx_compiler=" + str(mpicxx),
+                      "--disable-boost-version-check",
+                      "--enable-languages=c,c++,fortran,binaries")
+            #make("install-core")
+            srun = which('srun')
+            srun('-ppdebug', 'make', '-j16', 'install-core')
+            make("install", "-C", "bin/")
+            #make("check")
+
