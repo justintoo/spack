@@ -40,7 +40,8 @@ class Rose(Package):
     version('0.9.7.21', commit='8924055d0f1e01ba37053fe5068a7989ff2c7874', git='https://github.com/rose-compiler/rose-develop.git')
     version('0.9.7.16', commit='b2cc9cf0996c6b2598919e5cdcd88c1cd1806030', git='https://github.com/rose-compiler/rose-develop.git')
     # Placeholder for automated testing
-    version('__ROSE_VERSION__', commit='__ROSE_COMMIT__', git='rose-dev@rosecompiler1.llnl.gov:rose/scratch/rose.git')
+    # version('__ROSE_VERSION__', commit='__ROSE_COMMIT__', git='rose-dev@rosecompiler1.llnl.gov:rose/scratch/rose.git')
+    # ADD_EXTRA_VERSIONS_HERE
 
     depends_on("autoconf@2.69")
     depends_on("automake@1.14")
