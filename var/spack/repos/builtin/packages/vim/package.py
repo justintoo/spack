@@ -25,7 +25,7 @@
 from spack import *
 
 
-class Vim(Package):
+class Vim(AutotoolsPackage):
     """Vim is a highly configurable text editor built to enable efficient text
     editing. It is an improved version of the vi editor distributed with most
     UNIX systems.  Vim is often called a "programmer's editor," and so useful
@@ -35,21 +35,11 @@ class Vim(Package):
     """
 
     homepage = "http://www.vim.org"
-    url      = "ftp://ftp.vim.org/pub/vim/unix/vim-7.4.tar.bz2"
-    list_url = "http://ftp.vim.org/pub/vim/unix/"
+    url      = "https://github.com/vim/vim/archive/v8.0.0134.tar.gz"
 
-    version('8.0',     '808d2ebdab521e18bc5e0eaede0db867')
-    version('7.4',     '607e135c559be642f210094ad023dc65')
-    version('7.3',     '5b9510a17074e2b37d8bb38ae09edbf2')
-    version('7.2',     'f0901284b338e448bfd79ccca0041254')
-    version('7.1',     '44c6b4914f38d6f9aa959640b89da329')
-    version('7.0',     '4ca69757678272f718b1041c810d82d8')
-    version('6.4',     '774c14d93ce58674b3b2c880edd12d77')
-    version('6.3',     '821fda8f14d674346b87e3ef9cb96389')
-    version('6.2',     'c49d360bbd069d00e2a57804f2a123d9')
-    version('6.1.405', 'd220ff58f2c72ed606e6d0297c2f2a7c')
-    version('6.1',     '7fd0f915adc7c0dab89772884268b030')
-    version('6.0',     '9d9ca84d489af6b3f54639dd97af3774')
+    version('8.0.0454', '4030bf677bdfbd14efb588e4d9a24128')
+    version('8.0.0134', 'c74668d25c2acc85d655430dd60886cd')
+    version('7.4.2367', 'a0a7bc394f7ab1d95571fe6ab05da3ea')
 
     feature_sets = ('huge', 'big', 'normal', 'small', 'tiny')
     for fs in feature_sets:
@@ -61,15 +51,24 @@ class Vim(Package):
     variant('ruby', default=False, description="build with Ruby")
     depends_on('ruby', when='+ruby')
 
+    variant('lua', default=False, description="build with Lua")
+    depends_on('lua', when='+lua')
+
+    variant('perl', default=False, description="build with Perl")
+    depends_on('perl', when='+perl')
+
     variant('cscope', default=False, description="build with cscope support")
     depends_on('cscope', when='+cscope', type='run')
 
+    # TODO: Once better support for multi-valued variants is added, add
+    # support for auto/no/gtk2/gnome2/gtk3/motif/athena/neXtaw/photon/carbon
     variant('gui', default=False, description="build with gui (gvim)")
-    # virtual dependency?
+    variant('x', default=False, description="use the X Window System")
 
-    depends_on('ncurses', when="@8.0:")
+    depends_on('ncurses', when="@7.4:")
 
-    def install(self, spec, prefix):
+    def configure_args(self):
+        spec = self.spec
         feature_set = None
         for fs in self.feature_sets:
             if "+" + fs in spec:
@@ -88,26 +87,42 @@ class Vim(Package):
         if feature_set is None:
             feature_set = 'normal'
 
-        configure_args = []
+        configure_args = ["--enable-fail-if-missing"]
+
         configure_args.append("--with-features=" + feature_set)
 
         if '+python' in spec:
             configure_args.append("--enable-pythoninterp=yes")
         else:
-            configure_args.append("--enable-pythoninterp=dynamic")
+            configure_args.append("--enable-pythoninterp=no")
 
         if '+ruby' in spec:
             configure_args.append("--enable-rubyinterp=yes")
         else:
-            configure_args.append("--enable-rubyinterp=dynamic")
+            configure_args.append("--enable-rubyinterp=no")
+
+        if '+lua' in spec:
+            configure_args.append("--enable-luainterp=yes")
+            configure_args.append("--with-lua-prefix=%s" % spec['lua'].prefix)
+        else:
+            configure_args.append("--enable-luainterp=no")
+
+        if '+perl' in spec:
+            configure_args.append("--enable-perlinterp=yes")
+        else:
+            configure_args.append("--enable-perlinterp=no")
 
         if '+gui' in spec:
             configure_args.append("--enable-gui=auto")
+        else:
+            configure_args.append("--enable-gui=no")
+
+        if '+x' in spec:
+            configure_args.append("--with-x")
+        else:
+            configure_args.append("--without-x")
 
         if '+cscope' in spec:
             configure_args.append("--enable-cscope")
 
-        configure("--prefix=%s" % prefix, *configure_args)
-
-        make()
-        make("install")
+        return configure_args

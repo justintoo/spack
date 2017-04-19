@@ -42,8 +42,7 @@ import spack.error
 from spack.version import *
 from functools import partial
 from itertools import chain
-from spack.config import *
-import spack.preferred_packages
+from spack.package_prefs import *
 
 
 class DefaultConcretizer(object):
@@ -64,11 +63,11 @@ class DefaultConcretizer(object):
                 raise UnsatisfiableProviderSpecError(providers[0], spec)
             spec_w_preferred_providers = find_spec(
                 spec,
-                lambda x: spack.pkgsort.spec_has_preferred_provider(
+                lambda x: pkgsort().spec_has_preferred_provider(
                     x.name, spec.name))
             if not spec_w_preferred_providers:
                 spec_w_preferred_providers = spec
-            provider_cmp = partial(spack.pkgsort.provider_compare,
+            provider_cmp = partial(pkgsort().provider_compare,
                                    spec_w_preferred_providers.name,
                                    spec.name)
             candidates = sorted(providers, cmp=provider_cmp)
@@ -95,7 +94,11 @@ class DefaultConcretizer(object):
                                      not b.external and b.external_module):
                 # We're choosing between different providers, so
                 # maintain order from provider sort
-                return candidates.index(a) - candidates.index(b)
+                index_of_a = next(i for i in range(0, len(candidates))
+                                  if a.satisfies(candidates[i]))
+                index_of_b = next(i for i in range(0, len(candidates))
+                                  if b.satisfies(candidates[i]))
+                return index_of_a - index_of_b
 
             result = cmp_specs(a, b)
             if result != 0:
@@ -165,8 +168,8 @@ class DefaultConcretizer(object):
 
         # ---------- Produce prioritized list of versions
         # Get list of preferences from packages.yaml
-        preferred = spack.pkgsort
-        # NOTE: spack.pkgsort == spack.preferred_packages.PreferredPackages()
+        preferred = pkgsort()
+        # NOTE: pkgsort() == spack.package_prefs.PreferredPackages()
 
         yaml_specs = [
             x[0] for x in
@@ -236,47 +239,6 @@ class DefaultConcretizer(object):
 
         return True   # Things changed
 
-    def _concretize_operating_system(self, spec):
-        if spec.architecture.platform_os is not None and isinstance(
-                spec.architecture.platform_os,
-                spack.architecture.OperatingSystem):
-            return False
-
-        if spec.root.architecture and spec.root.architecture.platform_os:
-            if isinstance(spec.root.architecture.platform_os,
-                          spack.architecture.OperatingSystem):
-                spec.architecture.platform_os = \
-                    spec.root.architecture.platform_os
-        else:
-            spec.architecture.platform_os = \
-                spec.architecture.platform.operating_system('default_os')
-        return True  # changed
-
-    def _concretize_target(self, spec):
-        if spec.architecture.target is not None and isinstance(
-                spec.architecture.target, spack.architecture.Target):
-            return False
-        if spec.root.architecture and spec.root.architecture.target:
-            if isinstance(spec.root.architecture.target,
-                          spack.architecture.Target):
-                spec.architecture.target = spec.root.architecture.target
-        else:
-            spec.architecture.target = spec.architecture.platform.target(
-                'default_target')
-        return True  # changed
-
-    def _concretize_platform(self, spec):
-        if spec.architecture.platform is not None and isinstance(
-                spec.architecture.platform, spack.architecture.Platform):
-            return False
-        if spec.root.architecture and spec.root.architecture.platform:
-            if isinstance(spec.root.architecture.platform,
-                          spack.architecture.Platform):
-                spec.architecture.platform = spec.root.architecture.platform
-        else:
-            spec.architecture.platform = spack.architecture.platform()
-        return True  # changed?
-
     def concretize_architecture(self, spec):
         """If the spec is empty provide the defaults of the platform. If the
         architecture is not a basestring, then check if either the platform,
@@ -288,16 +250,25 @@ class DefaultConcretizer(object):
         DAG has an architecture, then use the root otherwise use the defaults
         on the platform.
         """
-        if spec.architecture is None:
-            # Set the architecture to all defaults
-            spec.architecture = spack.architecture.Arch()
-            return True
+        root_arch = spec.root.architecture
+        sys_arch = spack.spec.ArchSpec(spack.architecture.sys_type())
+        spec_changed = False
 
-        # Concretize the operating_system and target based of the spec
-        ret = any((self._concretize_platform(spec),
-                   self._concretize_operating_system(spec),
-                   self._concretize_target(spec)))
-        return ret
+        if spec.architecture is None:
+            spec.architecture = spack.spec.ArchSpec(sys_arch)
+            spec_changed = True
+
+        default_archs = [root_arch, sys_arch]
+        while not spec.architecture.concrete and default_archs:
+            arch = default_archs.pop(0)
+
+            replacement_fields = [k for k, v in arch.to_cmp_dict().iteritems()
+                                  if v and not getattr(spec.architecture, k)]
+            for field in replacement_fields:
+                setattr(spec.architecture, field, getattr(arch, field))
+                spec_changed = True
+
+        return spec_changed
 
     def concretize_variants(self, spec):
         """If the spec already has variants filled in, return.  Otherwise, add
@@ -305,7 +276,7 @@ class DefaultConcretizer(object):
            the package specification.
         """
         changed = False
-        preferred_variants = spack.pkgsort.spec_preferred_variants(
+        preferred_variants = pkgsort().spec_preferred_variants(
             spec.package_class.name)
         for name, variant in spec.package_class.variants.items():
             if name not in spec.variants:
@@ -329,29 +300,31 @@ class DefaultConcretizer(object):
            build with the compiler that will be used by libraries that
            link to this one, to maximize compatibility.
         """
-        # Pass on concretizing the compiler if the target is not yet determined
-        if not spec.architecture.platform_os:
-            # Although this usually means changed, this means awaiting other
-            # changes
+        # Pass on concretizing the compiler if the target or operating system
+        # is not yet determined
+        if not (spec.architecture.platform_os and spec.architecture.target):
+            # We haven't changed, but other changes need to happen before we
+            # continue. `return True` here to force concretization to keep
+            # running.
             return True
 
         # Only use a matching compiler if it is of the proper style
         # Takes advantage of the proper logic already existing in
         # compiler_for_spec Should think whether this can be more
         # efficient
-        def _proper_compiler_style(cspec, arch):
-            platform = arch.platform
-            compilers = spack.compilers.compilers_for_spec(cspec,
-                                                           platform=platform)
-            return filter(lambda c: c.operating_system ==
-                          arch.platform_os, compilers)
-            # return compilers
+        def _proper_compiler_style(cspec, aspec):
+            return spack.compilers.compilers_for_spec(cspec, arch_spec=aspec)
 
-        all_compilers = spack.compilers.all_compilers()
+        all_compiler_specs = spack.compilers.all_compiler_specs()
+        if not all_compiler_specs:
+            raise spack.compilers.NoCompilersError()
 
         if (spec.compiler and
             spec.compiler.concrete and
-                spec.compiler in all_compilers):
+                spec.compiler in all_compiler_specs):
+            if not _proper_compiler_style(spec.compiler, spec.architecture):
+                _compiler_concretization_failure(
+                    spec.compiler, spec.architecture)
             return False
 
         # Find the another spec that has a compiler, or the root if none do
@@ -364,31 +337,34 @@ class DefaultConcretizer(object):
         assert(other_spec)
 
         # Check if the compiler is already fully specified
-        if other_compiler in all_compilers:
+        if other_compiler in all_compiler_specs:
             spec.compiler = other_compiler.copy()
+            if not _proper_compiler_style(spec.compiler, spec.architecture):
+                _compiler_concretization_failure(
+                    spec.compiler, spec.architecture)
             return True
 
         # Filter the compilers into a sorted list based on the compiler_order
         # from spackconfig
-        compiler_list = all_compilers if not other_compiler else \
+        compiler_list = all_compiler_specs if not other_compiler else \
             spack.compilers.find(other_compiler)
+        if not compiler_list:
+            # No compiler with a satisfactory spec was found
+            raise UnavailableCompilerVersionError(other_compiler)
         cmp_compilers = partial(
-            spack.pkgsort.compiler_compare, other_spec.name)
+            pkgsort().compiler_compare, other_spec.name)
         matches = sorted(compiler_list, cmp=cmp_compilers)
-        if not matches:
-            arch = spec.architecture
-            raise UnavailableCompilerVersionError(other_compiler,
-                                                  arch.platform_os)
 
         # copy concrete version into other_compiler
-        index = 0
-        while not _proper_compiler_style(matches[index], spec.architecture):
-            index += 1
-            if index == len(matches) - 1:
-                arch = spec.architecture
-                raise UnavailableCompilerVersionError(spec.compiler,
-                                                      arch.platform_os)
-        spec.compiler = matches[index].copy()
+        try:
+            spec.compiler = next(
+                c for c in matches
+                if _proper_compiler_style(c, spec.architecture)).copy()
+        except StopIteration:
+            # No compiler with a satisfactory spec has a suitable arch
+            _compiler_concretization_failure(
+                other_compiler, spec.architecture)
+
         assert(spec.compiler.concrete)
         return True  # things changed.
 
@@ -398,47 +374,34 @@ class DefaultConcretizer(object):
         compiler is used, defaulting to no compiler flags in the spec.
         Default specs set at the compiler level will still be added later.
         """
-
-        if not spec.architecture.platform_os:
-            # Although this usually means changed, this means awaiting other
-            # changes
+        # Pass on concretizing the compiler flags if the target or operating
+        # system is not set.
+        if not (spec.architecture.platform_os and spec.architecture.target):
+            # We haven't changed, but other changes need to happen before we
+            # continue. `return True` here to force concretization to keep
+            # running.
             return True
+
+        compiler_match = lambda other: (
+            spec.compiler == other.compiler and
+            spec.architecture == other.architecture)
 
         ret = False
         for flag in spack.spec.FlagMap.valid_compiler_flags():
+            if flag not in spec.compiler_flags:
+                spec.compiler_flags[flag] = list()
             try:
                 nearest = next(p for p in spec.traverse(direction='parents')
-                               if ((p.compiler == spec.compiler and
-                                    p is not spec) and
+                               if (compiler_match(p) and
+                                   (p is not spec) and
                                    flag in p.compiler_flags))
-                if flag not in spec.compiler_flags or \
-                        not (sorted(spec.compiler_flags[flag]) >=
-                             sorted(nearest.compiler_flags[flag])):
-                    if flag in spec.compiler_flags:
-                        spec.compiler_flags[flag] = list(
-                            set(spec.compiler_flags[flag]) |
-                            set(nearest.compiler_flags[flag]))
-                    else:
-                        spec.compiler_flags[
-                            flag] = nearest.compiler_flags[flag]
+                nearest_flags = set(nearest.compiler_flags.get(flag, []))
+                flags = set(spec.compiler_flags.get(flag, []))
+                if (nearest_flags - flags):
+                    spec.compiler_flags[flag] = list(nearest_flags | flags)
                     ret = True
-
             except StopIteration:
-                if (flag in spec.root.compiler_flags and
-                    ((flag not in spec.compiler_flags) or
-                     sorted(spec.compiler_flags[flag]) !=
-                     sorted(spec.root.compiler_flags[flag]))):
-                    if flag in spec.compiler_flags:
-                        spec.compiler_flags[flag] = list(
-                            set(spec.compiler_flags[flag]) |
-                            set(spec.root.compiler_flags[flag]))
-                    else:
-                        spec.compiler_flags[
-                            flag] = spec.root.compiler_flags[flag]
-                    ret = True
-                else:
-                    if flag not in spec.compiler_flags:
-                        spec.compiler_flags[flag] = []
+                pass
 
         # Include the compiler flag defaults from the config files
         # This ensures that spack will detect conflicts that stem from a change
@@ -446,19 +409,11 @@ class DefaultConcretizer(object):
         compiler = spack.compilers.compiler_for_spec(
             spec.compiler, spec.architecture)
         for flag in compiler.flags:
-            if flag not in spec.compiler_flags:
-                spec.compiler_flags[flag] = compiler.flags[flag]
-                if compiler.flags[flag] != []:
-                    ret = True
-            else:
-                if ((sorted(spec.compiler_flags[flag]) !=
-                     sorted(compiler.flags[flag])) and
-                    (not set(spec.compiler_flags[flag]) >=
-                     set(compiler.flags[flag]))):
-                    ret = True
-                    spec.compiler_flags[flag] = list(
-                        set(spec.compiler_flags[flag]) |
-                        set(compiler.flags[flag]))
+            config_flags = set(compiler.flags.get(flag, []))
+            flags = set(spec.compiler_flags.get(flag, []))
+            spec.compiler_flags[flag] = list(config_flags | flags)
+            if (config_flags - flags):
+                ret = True
 
         return ret
 
@@ -493,39 +448,38 @@ def find_spec(spec, condition):
     return None   # Nothing matched the condition.
 
 
-def cmp_specs(lhs, rhs):
-    # Package name sort order is not configurable, always goes alphabetical
-    if lhs.name != rhs.name:
-        return cmp(lhs.name, rhs.name)
+def _compiler_concretization_failure(compiler_spec, arch):
+    # Distinguish between the case that there are compilers for
+    # the arch but not with the given compiler spec and the case that
+    # there are no compilers for the arch at all
+    if not spack.compilers.compilers_for_arch(arch):
+        available_os_targets = set(
+            (c.operating_system, c.target) for c in
+            spack.compilers.all_compilers())
+        raise NoCompilersForArchError(arch, available_os_targets)
+    else:
+        raise UnavailableCompilerVersionError(compiler_spec, arch)
 
-    # Package version is second in compare order
-    pkgname = lhs.name
-    if lhs.versions != rhs.versions:
-        return spack.pkgsort.version_compare(
-            pkgname, lhs.versions, rhs.versions)
 
-    # Compiler is third
-    if lhs.compiler != rhs.compiler:
-        return spack.pkgsort.compiler_compare(
-            pkgname, lhs.compiler, rhs.compiler)
+class NoCompilersForArchError(spack.error.SpackError):
+    def __init__(self, arch, available_os_targets):
+        err_msg = ("No compilers found"
+                   " for operating system %s and target %s." 
+                   "\nIf previous installations have succeeded, the"
+                   " operating system may have been updated." %
+                   (arch.platform_os, arch.target))
 
-    # Variants
-    if lhs.variants != rhs.variants:
-        return spack.pkgsort.variant_compare(
-            pkgname, lhs.variants, rhs.variants)
+        available_os_target_strs = list()
+        for os, t in available_os_targets:
+            os_target_str = "%s-%s" % (os, t) if t else os
+            available_os_target_strs.append(os_target_str)
+        err_msg += (
+            "\nCompilers are defined for the following"
+            " operating systems and targets:\n\t" +
+            "\n\t".join(available_os_target_strs))
 
-    # Architecture
-    if lhs.architecture != rhs.architecture:
-        return spack.pkgsort.architecture_compare(
-            pkgname, lhs.architecture, rhs.architecture)
-
-    # Dependency is not configurable
-    lhash, rhash = hash(lhs), hash(rhs)
-    if lhash != rhash:
-        return -1 if lhash < rhash else 1
-
-    # Equal specs
-    return 0
+        super(NoCompilersForArchError, self).__init__(
+            err_msg, "Run 'spack compiler find' to add compilers.")
 
 
 class UnavailableCompilerVersionError(spack.error.SpackError):
@@ -533,11 +487,14 @@ class UnavailableCompilerVersionError(spack.error.SpackError):
     """Raised when there is no available compiler that satisfies a
        compiler spec."""
 
-    def __init__(self, compiler_spec, operating_system):
+    def __init__(self, compiler_spec, arch=None):
+        err_msg = "No compilers with spec %s found" % compiler_spec
+        if arch:
+            err_msg += (" for operating system %s and target %s." %
+                        (compiler_spec, arch.platform_os, arch.target))
+
         super(UnavailableCompilerVersionError, self).__init__(
-            "No available compiler version matches '%s' on operating_system %s"
-            % (compiler_spec, operating_system),
-            "Run 'spack compilers' to see available compiler Options.")
+            err_msg, "Run 'spack compiler find' to add compilers.")
 
 
 class NoValidVersionError(spack.error.SpackError):

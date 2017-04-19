@@ -42,9 +42,9 @@ from llnl.util.filesystem import *
 
 import spack
 import spack.error
-import spack.config
 import spack.spec
 from spack.provider_index import ProviderIndex
+from spack.util.path import canonicalize_path
 from spack.util.naming import *
 
 #
@@ -94,19 +94,6 @@ class SpackNamespace(ModuleType):
         return getattr(self, name)
 
 
-def substitute_spack_prefix(path):
-    """Replaces instances of $spack with Spack's prefix."""
-    return re.sub(r'^\$spack', spack.prefix, path)
-
-
-def canonicalize_path(path):
-    """Substitute $spack, expand user home, take abspath."""
-    path = substitute_spack_prefix(path)
-    path = os.path.expanduser(path)
-    path = os.path.abspath(path)
-    return path
-
-
 class RepoPath(object):
     """A RepoPath is a list of repos that function as one.
 
@@ -128,6 +115,7 @@ class RepoPath(object):
 
         # If repo_dirs is empty, just use the configuration
         if not repo_dirs:
+            import spack.config
             repo_dirs = spack.config.get_config('repos')
             if not repo_dirs:
                 raise NoRepoConfiguredError(
@@ -145,7 +133,7 @@ class RepoPath(object):
                          "    spack repo rm %s" % root)
 
     def swap(self, other):
-        """Convenience function to make swapping repostiories easier.
+        """Convenience function to make swapping repositories easier.
 
         This is currently used by mock tests.
         TODO: Maybe there is a cleaner way.
@@ -349,7 +337,15 @@ class RepoPath(object):
         return self.repo_for_pkg(pkg_name).filename_for_package_name(pkg_name)
 
     def exists(self, pkg_name):
+        """Whether package with the give name exists in the path's repos.
+
+        Note that virtual packages do not "exist".
+        """
         return any(repo.exists(pkg_name) for repo in self.repos)
+
+    def is_virtual(self, pkg_name):
+        """True if the package with this name is virtual, False otherwise."""
+        return pkg_name in self.provider_index
 
     def __contains__(self, pkg_name):
         return self.exists(pkg_name)
@@ -632,12 +628,12 @@ class Repo(object):
 
         # Read the old ProviderIndex, or make a new one.
         key = self._cache_file
-        index_existed = spack.user_cache.init_entry(key)
+        index_existed = spack.misc_cache.init_entry(key)
         if index_existed and not self._needs_update:
-            with spack.user_cache.read_transaction(key) as f:
+            with spack.misc_cache.read_transaction(key) as f:
                 self._provider_index = ProviderIndex.from_yaml(f)
         else:
-            with spack.user_cache.write_transaction(key) as (old, new):
+            with spack.misc_cache.write_transaction(key) as (old, new):
                 if old:
                     self._provider_index = ProviderIndex.from_yaml(old)
                 else:
@@ -713,7 +709,7 @@ class Repo(object):
             self._all_package_names = []
 
             # Get index modification time.
-            index_mtime = spack.user_cache.mtime(self._cache_file)
+            index_mtime = spack.misc_cache.mtime(self._cache_file)
 
             for pkg_name in os.listdir(self.packages_path):
                 # Skip non-directories in the package root.
@@ -783,6 +779,10 @@ class Repo(object):
         # Just check whether the file exists.
         filename = self.filename_for_package_name(pkg_name)
         return os.path.exists(filename)
+
+    def is_virtual(self, pkg_name):
+        """True if the package with this name is virtual, False otherwise."""
+        return self.provider_index.contains(pkg_name)
 
     def _get_pkg_module(self, pkg_name):
         """Create a module for a particular package.

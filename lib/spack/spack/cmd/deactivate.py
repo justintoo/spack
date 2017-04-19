@@ -27,22 +27,23 @@ import llnl.util.tty as tty
 
 import spack
 import spack.cmd
+import spack.store
 from spack.graph import topological_sort
 
-description = "Deactivate a package extension."
+description = "deactivate a package extension"
 
 
 def setup_parser(subparser):
     subparser.add_argument(
         '-f', '--force', action='store_true',
-        help="Run deactivation even if spec is NOT currently activated.")
+        help="run deactivation even if spec is NOT currently activated")
     subparser.add_argument(
         '-a', '--all', action='store_true',
-        help="Deactivate all extensions of an extendable package, or "
-        "deactivate an extension AND its dependencies.")
+        help="deactivate all extensions of an extendable package, or "
+        "deactivate an extension AND its dependencies")
     subparser.add_argument(
         'spec', nargs=argparse.REMAINDER,
-        help="spec of package extension to deactivate.")
+        help="spec of package extension to deactivate")
 
 
 def deactivate(parser, args):
@@ -56,7 +57,7 @@ def deactivate(parser, args):
     if args.all:
         if pkg.extendable:
             tty.msg("Deactivating all extensions of %s" % pkg.spec.short_spec)
-            ext_pkgs = spack.installed_db.installed_extensions_for(spec)
+            ext_pkgs = spack.store.db.installed_extensions_for(spec)
 
             for ext_pkg in ext_pkgs:
                 ext_pkg.spec.normalize()

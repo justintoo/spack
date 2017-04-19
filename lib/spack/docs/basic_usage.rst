@@ -123,13 +123,13 @@ that the packages is installed:
 
    $ spack install mpileaks
    ==> Installing mpileaks
-   ==> mpich is already installed in /home/gamblin2/spack/opt/linux-debian7-x86_64/gcc@4.4.7/mpich@3.0.4.
-   ==> callpath is already installed in /home/gamblin2/spack/opt/linux-debian7-x86_64/gcc@4.4.7/callpath@1.0.2-5dce4318.
-   ==> adept-utils is already installed in /home/gamblin2/spack/opt/linux-debian7-x86_64/gcc@4.4.7/adept-utils@1.0-5adef8da.
+   ==> mpich is already installed in ~/spack/opt/linux-debian7-x86_64/gcc@4.4.7/mpich@3.0.4.
+   ==> callpath is already installed in ~/spack/opt/linux-debian7-x86_64/gcc@4.4.7/callpath@1.0.2-5dce4318.
+   ==> adept-utils is already installed in ~/spack/opt/linux-debian7-x86_64/gcc@4.4.7/adept-utils@1.0-5adef8da.
    ==> Trying to fetch from https://github.com/hpc/mpileaks/releases/download/v1.0/mpileaks-1.0.tar.gz
    ######################################################################## 100.0%
-   ==> Staging archive: /home/gamblin2/spack/var/spack/stage/mpileaks@1.0%gcc@4.4.7 arch=linux-debian7-x86_64-59f6ad23/mpileaks-1.0.tar.gz
-   ==> Created stage in /home/gamblin2/spack/var/spack/stage/mpileaks@1.0%gcc@4.4.7 arch=linux-debian7-x86_64-59f6ad23.
+   ==> Staging archive: ~/spack/var/spack/stage/mpileaks@1.0%gcc@4.4.7 arch=linux-debian7-x86_64-59f6ad23/mpileaks-1.0.tar.gz
+   ==> Created stage in ~/spack/var/spack/stage/mpileaks@1.0%gcc@4.4.7 arch=linux-debian7-x86_64-59f6ad23.
    ==> No patches needed for mpileaks.
    ==> Building mpileaks.
 
@@ -137,7 +137,7 @@ that the packages is installed:
 
    ==> Successfully installed mpileaks.
      Fetch: 2.16s.  Build: 9.82s.  Total: 11.98s.
-   [+] /home/gamblin2/spack/opt/linux-debian7-x86_64/gcc@4.4.7/mpileaks@1.0-59f6ad23
+   [+] ~/spack/opt/linux-debian7-x86_64/gcc@4.4.7/mpileaks@1.0-59f6ad23
 
 The last line, with the ``[+]``, indicates where the package is
 installed.
@@ -252,7 +252,7 @@ the tarballs in question to it (see :ref:`mirrors`):
    .. code-block:: yaml
 
        mirrors:
-         manual: file:///home/me/.spack/manual_mirror
+         manual: file://~/.spack/manual_mirror
 
 #. Put your tarballs in it.  Tarballs should be named
    ``<package>/<package>-<version>.tar.gz``.  For example:
@@ -374,13 +374,13 @@ use ``spack find --paths``:
    $ spack find --paths
    ==> 74 installed packages.
    -- linux-debian7-x86_64 / gcc@4.4.7 --------------------------------
-       ImageMagick@6.8.9-10  /home/gamblin2/spack/opt/linux-debian7-x86_64/gcc@4.4.7/ImageMagick@6.8.9-10-4df950dd
-       adept-utils@1.0       /home/gamblin2/spack/opt/linux-debian7-x86_64/gcc@4.4.7/adept-utils@1.0-5adef8da
-       atk@2.14.0            /home/gamblin2/spack/opt/linux-debian7-x86_64/gcc@4.4.7/atk@2.14.0-3d09ac09
-       boost@1.55.0          /home/gamblin2/spack/opt/linux-debian7-x86_64/gcc@4.4.7/boost@1.55.0
-       bzip2@1.0.6           /home/gamblin2/spack/opt/linux-debian7-x86_64/gcc@4.4.7/bzip2@1.0.6
-       cairo@1.14.0          /home/gamblin2/spack/opt/linux-debian7-x86_64/gcc@4.4.7/cairo@1.14.0-fcc2ab44
-       callpath@1.0.2        /home/gamblin2/spack/opt/linux-debian7-x86_64/gcc@4.4.7/callpath@1.0.2-5dce4318
+       ImageMagick@6.8.9-10  ~/spack/opt/linux-debian7-x86_64/gcc@4.4.7/ImageMagick@6.8.9-10-4df950dd
+       adept-utils@1.0       ~/spack/opt/linux-debian7-x86_64/gcc@4.4.7/adept-utils@1.0-5adef8da
+       atk@2.14.0            ~/spack/opt/linux-debian7-x86_64/gcc@4.4.7/atk@2.14.0-3d09ac09
+       boost@1.55.0          ~/spack/opt/linux-debian7-x86_64/gcc@4.4.7/boost@1.55.0
+       bzip2@1.0.6           ~/spack/opt/linux-debian7-x86_64/gcc@4.4.7/bzip2@1.0.6
+       cairo@1.14.0          ~/spack/opt/linux-debian7-x86_64/gcc@4.4.7/cairo@1.14.0-fcc2ab44
+       callpath@1.0.2        ~/spack/opt/linux-debian7-x86_64/gcc@4.4.7/callpath@1.0.2-5dce4318
    ...
 
 And, finally, you can restrict your search to a particular package
@@ -390,9 +390,9 @@ by supplying its name:
 
    $ spack find --paths libelf
    -- linux-debian7-x86_64 / gcc@4.4.7 --------------------------------
-       libelf@0.8.11  /home/gamblin2/spack/opt/linux-debian7-x86_64/gcc@4.4.7/libelf@0.8.11
-       libelf@0.8.12  /home/gamblin2/spack/opt/linux-debian7-x86_64/gcc@4.4.7/libelf@0.8.12
-       libelf@0.8.13  /home/gamblin2/spack/opt/linux-debian7-x86_64/gcc@4.4.7/libelf@0.8.13
+       libelf@0.8.11  ~/spack/opt/linux-debian7-x86_64/gcc@4.4.7/libelf@0.8.11
+       libelf@0.8.12  ~/spack/opt/linux-debian7-x86_64/gcc@4.4.7/libelf@0.8.12
+       libelf@0.8.13  ~/spack/opt/linux-debian7-x86_64/gcc@4.4.7/libelf@0.8.13
 
 ``spack find`` actually does a lot more than this.  You can use
 *specs* to query for specific configurations and builds of each
@@ -647,8 +647,8 @@ avoid ambiguity.
 
 When spack normalizes specs, it prints them out with no spaces boolean
 variants using the backwards compatibility syntax and uses only ``~``
-for disabled boolean variants.  We allow ``-`` and spaces on the command
-line is provided for convenience and legibility.
+for disabled boolean variants.  The ``-`` and spaces on the command
+line are provided for convenience and legibility.
 
 ^^^^^^^^^^^^^^
 Compiler Flags
@@ -658,19 +658,51 @@ Compiler flags are specified using the same syntax as non-boolean variants,
 but fulfill a different purpose. While the function of a variant is set by
 the package, compiler flags are used by the compiler wrappers to inject
 flags into the compile line of the build. Additionally, compiler flags are
-inherited by dependencies. ``spack install libdwarf cppflags=\"-g\"`` will
+inherited by dependencies. ``spack install libdwarf cppflags="-g"`` will
 install both libdwarf and libelf with the ``-g`` flag injected into their
 compile line.
 
-Notice that the value of the compiler flags must be escape quoted on the
-command line. From within python files, the same spec would be specified
-``libdwarf cppflags="-g"``. This is necessary because of how the shell
-handles the quote symbols.
+Notice that the value of the compiler flags must be quoted if it
+contains any spaces. Any of ``cppflags=-O3``, ``cppflags="-O3"``,
+``cppflags='-O3'``, and ``cppflags="-O3 -fPIC"`` are acceptable, but
+``cppflags=-O3 -fPIC`` is not. Additionally, if they value of the
+compiler flags is not the last thing on the line, it must be followed
+by a space. The commmand ``spack install libelf cppflags="-O3"%intel``
+will be interpreted as an attempt to set `cppflags="-O3%intel"``.
 
 The six compiler flags are injected in the order of implicit make commands
 in GNU Autotools. If all flags are set, the order is
 ``$cppflags $cflags|$cxxflags $ldflags <command> $ldlibs`` for C and C++ and
 ``$fflags $cppflags $ldflags <command> $ldlibs`` for Fortran.
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Compiler environment variables and additional RPATHs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In the exceptional case a compiler requires setting special environment
+variables, like an explicit library load path. These can bet set in an
+extra section in the compiler configuration.  The user can also specify
+additional ``RPATHs`` that the compiler will add to all executables
+generated by that compiler.  This is useful for forcing certain compilers
+to RPATH their own runtime libraries, so that executables will run
+without the need to set ``LD_LIBRARY_PATH``.
+
+.. code-block:: yaml
+
+  compilers:
+    - compiler:
+        spec: gcc@4.9.3
+        paths:
+          cc: /opt/gcc/bin/gcc
+          c++: /opt/gcc/bin/g++
+          f77: /opt/gcc/bin/gfortran
+          fc: /opt/gcc/bin/gfortran
+        environment:
+          set:
+            LD_LIBRARY_PATH : /opt/gcc/lib
+        extra_rpaths:
+        - /path/to/some/compiler/runtime/directory
+        - /path/to/some/other/compiler/runtime/directory
 
 ^^^^^^^^^^^^^^^^^^^^^^^
 Architecture specifiers
@@ -809,574 +841,6 @@ add a version specifier to the spec:
 Notice that the package versions that provide insufficient MPI
 versions are now filtered out.
 
-.. _shell-support:
-
--------------------------------
-Integration with module systems
--------------------------------
-
-Spack provides some integration with `Environment Modules
-<http://modules.sourceforge.net/>`_ to make it easier to use the
-packages it installs.  If your system does not already have
-Environment Modules, see :ref:`InstallEnvironmentModules`.
-
-.. note::
-
-   Spack also supports `Dotkit
-   <https://computing.llnl.gov/?set=jobs&page=dotkit>`_, which is used
-   by some systems.  If you system does not already have a module
-   system installed, you should use Environment Modules or LMod.
-
-^^^^^^^^^^^^^^^^^^^^^^^^
-Spack and module systems
-^^^^^^^^^^^^^^^^^^^^^^^^
-
-You can enable shell support by sourcing some files in the
-``/share/spack`` directory.
-
-For ``bash`` or ``ksh``, run:
-
-.. code-block:: sh
-
-   export SPACK_ROOT=/path/to/spack
-   . $SPACK_ROOT/share/spack/setup-env.sh
-
-For ``csh`` and ``tcsh`` run:
-
-.. code-block:: csh
-
-   setenv SPACK_ROOT /path/to/spack
-   source $SPACK_ROOT/share/spack/setup-env.csh
-
-You can put the above code in your ``.bashrc`` or ``.cshrc``, and
-Spack's shell support will be available on the command line.
-
-When you install a package with Spack, it automatically generates a module file
-that lets you add the package to your environment.
-
-Currently, Spack supports the generation of `Environment Modules
-<http://wiki.tcl.tk/12999>`__ and `Dotkit
-<https://computing.llnl.gov/?set=jobs&page=dotkit>`_.  Generated
-module files for each of these systems can be found in these
-directories:
-
-.. code-block:: sh
-
-   $SPACK_ROOT/share/spack/modules
-   $SPACK_ROOT/share/spack/dotkit
-
-The directories are automatically added to your ``MODULEPATH`` and
-``DK_NODE`` environment variables when you enable Spack's `shell
-support <shell-support_>`_.
-
-^^^^^^^^^^^^^^^^^^^^^^^
-Using Modules & Dotkits
-^^^^^^^^^^^^^^^^^^^^^^^
-
-If you have shell support enabled you should be able to run either
-``module avail`` or ``use -l spack`` to see what modules/dotkits have
-been installed.  Here is sample output of those programs, showing lots
-of installed packages.
-
-.. code-block:: console
-
-   $ module avail
-
-   ------- /home/gamblin2/spack/share/spack/modules/linux-debian7-x86_64 --------
-   adept-utils@1.0%gcc@4.4.7-5adef8da   libelf@0.8.13%gcc@4.4.7
-   automaded@1.0%gcc@4.4.7-d9691bb0     libelf@0.8.13%intel@15.0.0
-   boost@1.55.0%gcc@4.4.7               mpc@1.0.2%gcc@4.4.7-559607f5
-   callpath@1.0.1%gcc@4.4.7-5dce4318    mpfr@3.1.2%gcc@4.4.7
-   dyninst@8.1.2%gcc@4.4.7-b040c20e     mpich@3.0.4%gcc@4.4.7
-   gcc@4.9.1%gcc@4.4.7-93ab98c5         mpich@3.0.4%gcc@4.9.0
-   gmp@6.0.0a%gcc@4.4.7                 mrnet@4.1.0%gcc@4.4.7-72b7881d
-   graphlib@2.0.0%gcc@4.4.7             netgauge@2.4.6%gcc@4.9.0-27912b7b
-   launchmon@1.0.1%gcc@4.4.7            stat@2.1.0%gcc@4.4.7-51101207
-   libNBC@1.1.1%gcc@4.9.0-27912b7b      sundials@2.5.0%gcc@4.9.0-27912b7b
-   libdwarf@20130729%gcc@4.4.7-b52fac98
-
-.. code-block:: console
-
-   $ use -l spack
-
-   spack ----------
-     adept-utils@1.0%gcc@4.4.7-5adef8da - adept-utils @1.0
-     automaded@1.0%gcc@4.4.7-d9691bb0 - automaded @1.0
-     boost@1.55.0%gcc@4.4.7 - boost @1.55.0
-     callpath@1.0.1%gcc@4.4.7-5dce4318 - callpath @1.0.1
-     dyninst@8.1.2%gcc@4.4.7-b040c20e - dyninst @8.1.2
-     gmp@6.0.0a%gcc@4.4.7 - gmp @6.0.0a
-     libNBC@1.1.1%gcc@4.9.0-27912b7b - libNBC @1.1.1
-     libdwarf@20130729%gcc@4.4.7-b52fac98 - libdwarf @20130729
-     libelf@0.8.13%gcc@4.4.7 - libelf @0.8.13
-     libelf@0.8.13%intel@15.0.0 - libelf @0.8.13
-     mpc@1.0.2%gcc@4.4.7-559607f5 - mpc @1.0.2
-     mpfr@3.1.2%gcc@4.4.7 - mpfr @3.1.2
-     mpich@3.0.4%gcc@4.4.7 - mpich @3.0.4
-     mpich@3.0.4%gcc@4.9.0 - mpich @3.0.4
-     netgauge@2.4.6%gcc@4.9.0-27912b7b - netgauge @2.4.6
-     sundials@2.5.0%gcc@4.9.0-27912b7b - sundials @2.5.0
-
-The names here should look familiar, they're the same ones from
-``spack find``.  You *can* use the names here directly.  For example,
-you could type either of these commands to load the callpath module:
-
-.. code-block:: console
-
-   $ use callpath@1.0.1%gcc@4.4.7-5dce4318
-
-.. code-block:: console
-
-   $ module load callpath@1.0.1%gcc@4.4.7-5dce4318
-
-Neither of these is particularly pretty, easy to remember, or
-easy to type.  Luckily, Spack has its own interface for using modules
-and dotkits.  You can use the same spec syntax you're used to:
-
-  =========================  ==========================
-  Environment Modules        Dotkit
-  =========================  ==========================
-  ``spack load <spec>``      ``spack use <spec>``
-  ``spack unload <spec>``    ``spack unuse <spec>``
-  =========================  ==========================
-
-And you can use the same shortened names you use everywhere else in
-Spack.  For example, this will add the ``mpich`` package built with
-``gcc`` to your path:
-
-.. code-block:: console
-
-   $ spack install mpich %gcc@4.4.7
-
-   # ... wait for install ...
-
-   $ spack use mpich %gcc@4.4.7
-   Prepending: mpich@3.0.4%gcc@4.4.7 (ok)
-   $ which mpicc
-   ~/src/spack/opt/linux-debian7-x86_64/gcc@4.4.7/mpich@3.0.4/bin/mpicc
-
-Or, similarly with modules, you could type:
-
-.. code-block:: console
-
-   $ spack load mpich %gcc@4.4.7
-
-These commands will add appropriate directories to your ``PATH``,
-``MANPATH``, ``CPATH``, and ``LD_LIBRARY_PATH``.  When you no longer
-want to use a package, you can type unload or unuse similarly:
-
-.. code-block:: console
-
-   $ spack unload mpich %gcc@4.4.7  # modules
-   $ spack unuse  mpich %gcc@4.4.7  # dotkit
-
-.. note::
-
-   These ``use``, ``unuse``, ``load``, and ``unload`` subcommands are
-   only available if you have enabled Spack's shell support *and* you
-   have dotkit or modules installed on your machine.
-
-^^^^^^^^^^^^^^^^^^^^^^
-Ambiguous module names
-^^^^^^^^^^^^^^^^^^^^^^
-
-If a spec used with load/unload or use/unuse is ambiguous (i.e. more
-than one installed package matches it), then Spack will warn you:
-
-.. code-block:: console
-
-   $ spack load libelf
-   ==> Error: Multiple matches for spec libelf.  Choose one:
-   libelf@0.8.13%gcc@4.4.7 arch=linux-debian7-x86_64
-   libelf@0.8.13%intel@15.0.0 arch=linux-debian7-x86_64
-
-You can either type the ``spack load`` command again with a fully
-qualified argument, or you can add just enough extra constraints to
-identify one package.  For example, above, the key differentiator is
-that one ``libelf`` is built with the Intel compiler, while the other
-used ``gcc``.  You could therefore just type:
-
-.. code-block:: console
-
-   $ spack load libelf %intel
-
-To identify just the one built with the Intel compiler.
-
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Module files generation and customization
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Environment Modules and Dotkit files are generated when packages are installed,
-and are placed in the following directories under the Spack root:
-
-.. code-block:: sh
-
-   $SPACK_ROOT/share/spack/modules
-   $SPACK_ROOT/share/spack/dotkit
-
-The content that gets written in each module file can be customized in two ways:
-
-#. overriding part of the ``spack.Package`` API within a ``package.py``
-#. writing dedicated configuration files
-
-^^^^^^^^^^^^^^^^^^^^^^^^
-Override ``Package`` API
-^^^^^^^^^^^^^^^^^^^^^^^^
-
-There are currently two methods in ``spack.Package`` that may affect the content
-of module files:
-
-.. code-block:: python
-
-   def setup_environment(self, spack_env, run_env):
-       """Set up the compile and runtime environments for a package."""
-       pass
-
-.. code-block:: python
-
-   def setup_dependent_environment(self, spack_env, run_env, dependent_spec):
-       """Set up the environment of packages that depend on this one"""
-       pass
-
-As briefly stated in the comments, the first method lets you customize the
-module file content for the package you are currently writing, the second
-allows for modifications to your dependees module file. In both cases one
-needs to fill ``run_env`` with the desired list of environment modifications.
-
-""""""""""""""""""""""""""""""""""""""""""""""""
-Example : ``builtin/packages/python/package.py``
-""""""""""""""""""""""""""""""""""""""""""""""""
-
-The ``python`` package that comes with the ``builtin`` Spack repository
-overrides ``setup_dependent_environment`` in the following way:
-
-.. code-block:: python
-
-   def setup_dependent_environment(self, spack_env, run_env, extension_spec):
-       if extension_spec.package.extends(self.spec):
-           run_env.prepend_path('PYTHONPATH', os.path.join(extension_spec.prefix, self.site_packages_dir))
-
-to insert the appropriate ``PYTHONPATH`` modifications in the module
-files of python packages.
-
-^^^^^^^^^^^^^^^^^
-Recursive Modules
-^^^^^^^^^^^^^^^^^
-
-In some cases, it is desirable to load not just a module, but also all
-the modules it depends on.  This is not required for most modules
-because Spack builds binaries with RPATH support.  However, not all
-packages use RPATH to find their dependencies: this can be true in
-particular for Python extensions, which are currently *not* built with
-RPATH.
-
-Scripts to load modules recursively may be made with the command:
-
-.. code-block:: console
-
-    $ spack module loads --dependencies <spec>
-
-An equivalent alternative is:
-
-.. code-block :: console
-
-    $ source <( spack module loads --dependencies <spec> )
-
-.. warning::
-
-    The ``spack load`` command does not currently accept the
-    ``--dependencies`` flag.  Use ``spack module loads`` instead, for
-    now.
-
-.. See #1662
-
-
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Module Commands for Shell Scripts
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Although Spack is flexible, the ``module`` command is much faster.
-This could become an issue when emitting a series of ``spack load``
-commands inside a shell script.  By adding the ``--shell`` flag,
-``spack module find`` may also be used to generate code that can be
-cut-and-pasted into a shell script.  For example:
-
-.. code-block:: console
-
-    $ spack module loads --dependencies py-numpy git
-    # bzip2@1.0.6%gcc@4.9.3=linux-x86_64
-    module load bzip2-1.0.6-gcc-4.9.3-ktnrhkrmbbtlvnagfatrarzjojmkvzsx
-    # ncurses@6.0%gcc@4.9.3=linux-x86_64
-    module load ncurses-6.0-gcc-4.9.3-kaazyneh3bjkfnalunchyqtygoe2mncv
-    # zlib@1.2.8%gcc@4.9.3=linux-x86_64
-    module load zlib-1.2.8-gcc-4.9.3-v3ufwaahjnviyvgjcelo36nywx2ufj7z
-    # sqlite@3.8.5%gcc@4.9.3=linux-x86_64
-    module load sqlite-3.8.5-gcc-4.9.3-a3eediswgd5f3rmto7g3szoew5nhehbr
-    # readline@6.3%gcc@4.9.3=linux-x86_64
-    module load readline-6.3-gcc-4.9.3-se6r3lsycrwxyhreg4lqirp6xixxejh3
-    # python@3.5.1%gcc@4.9.3=linux-x86_64
-    module load python-3.5.1-gcc-4.9.3-5q5rsrtjld4u6jiicuvtnx52m7tfhegi
-    # py-setuptools@20.5%gcc@4.9.3=linux-x86_64
-    module load py-setuptools-20.5-gcc-4.9.3-4qr2suj6p6glepnedmwhl4f62x64wxw2
-    # py-nose@1.3.7%gcc@4.9.3=linux-x86_64
-    module load py-nose-1.3.7-gcc-4.9.3-pwhtjw2dvdvfzjwuuztkzr7b4l6zepli
-    # openblas@0.2.17%gcc@4.9.3+shared=linux-x86_64
-    module load openblas-0.2.17-gcc-4.9.3-pw6rmlom7apfsnjtzfttyayzc7nx5e7y
-    # py-numpy@1.11.0%gcc@4.9.3+blas+lapack=linux-x86_64
-    module load py-numpy-1.11.0-gcc-4.9.3-mulodttw5pcyjufva4htsktwty4qd52r
-    # curl@7.47.1%gcc@4.9.3=linux-x86_64
-    module load curl-7.47.1-gcc-4.9.3-ohz3fwsepm3b462p5lnaquv7op7naqbi
-    # autoconf@2.69%gcc@4.9.3=linux-x86_64
-    module load autoconf-2.69-gcc-4.9.3-bkibjqhgqm5e3o423ogfv2y3o6h2uoq4
-    # cmake@3.5.0%gcc@4.9.3~doc+ncurses+openssl~qt=linux-x86_64
-    module load cmake-3.5.0-gcc-4.9.3-x7xnsklmgwla3ubfgzppamtbqk5rwn7t
-    # expat@2.1.0%gcc@4.9.3=linux-x86_64
-    module load expat-2.1.0-gcc-4.9.3-6pkz2ucnk2e62imwakejjvbv6egncppd
-    # git@2.8.0-rc2%gcc@4.9.3+curl+expat=linux-x86_64
-    module load git-2.8.0-rc2-gcc-4.9.3-3bib4hqtnv5xjjoq5ugt3inblt4xrgkd
-
-The script may be further edited by removing unnecessary modules.
-
-
-^^^^^^^^^^^^^^^
-Module Prefixes
-^^^^^^^^^^^^^^^
-
-On some systems, modules are automatically prefixed with a certain
-string; ``spack module loads`` needs to know about that prefix when it
-issues ``module load`` commands.  Add the ``--prefix`` option to your
-``spack module loads`` commands if this is necessary.
-
-For example, consider the following on one system:
-
-..code-block:: console
-
-    $ module avail
-    linux-SuSE11-x86_64/antlr-2.7.7-gcc-5.3.0-bdpl46y
-
-    $ spack module loads antlr    # WRONG!
-    # antlr@2.7.7%gcc@5.3.0~csharp+cxx~java~python arch=linux-SuSE11-x86_64
-    module load antlr-2.7.7-gcc-5.3.0-bdpl46y
-
-    $ spack module loads --prefix linux-SuSE11-x86_64/ antlr
-    # antlr@2.7.7%gcc@5.3.0~csharp+cxx~java~python arch=linux-SuSE11-x86_64
-    module load linux-SuSE11-x86_64/antlr-2.7.7-gcc-5.3.0-bdpl46y
-
-^^^^^^^^^^^^^^^^^^^
-Configuration files
-^^^^^^^^^^^^^^^^^^^
-
-Another way of modifying the content of module files is writing a
-``modules.yaml`` configuration file. Following usual Spack conventions, this
-file can be placed either at *site* or *user* scope.
-
-The default site configuration reads:
-
-.. literalinclude:: ../../../etc/spack/defaults/modules.yaml
-   :language: yaml
-
-It basically inspects the installation prefixes for the
-existence of a few folders and, if they exist, it prepends a path to a given
-list of environment variables.
-
-For each module system that can be enabled a finer configuration is possible:
-
-.. code-block:: yaml
-
-   modules:
-     tcl:
-       # contains environment modules specific customizations
-     dotkit:
-       # contains dotkit specific customizations
-
-The structure under the ``tcl`` and ``dotkit`` keys is almost equal, and will
-be showcased in the following by some examples.
-
-"""""""""""""""""""""""""""""""""""""""
-Select module files by spec constraints
-"""""""""""""""""""""""""""""""""""""""
-
-Using spec syntax it's possible to have different customizations for different
-groups of module files.
-
-Considering :
-
-.. code-block:: yaml
-
-   modules:
-     tcl:
-       all: # Default addition for every package
-         environment:
-           set:
-             BAR: 'bar'
-       ^openmpi:: # A double ':' overrides previous rules
-         environment:
-           set:
-             BAR: 'baz'
-       zlib:
-         environment:
-           prepend_path:
-             LD_LIBRARY_PATH: 'foo'
-       zlib%gcc@4.8:
-         environment:
-           unset:
-           - FOOBAR
-
-what will happen is that:
-
- - every module file will set ``BAR=bar``
- - unless the associated spec satisfies ``^openmpi`` in which case ``BAR=baz``
- - any spec that satisfies ``zlib`` will additionally prepend ``foo`` to ``LD_LIBRARY_PATH``
- - any spec that satisfies ``zlib%gcc@4.8`` will additionally unset ``FOOBAR``
-
-.. note::
-   Order does matter
-     The modifications associated with the ``all`` keyword are always evaluated
-     first, no matter where they appear in the configuration file. All the other
-     spec constraints are instead evaluated top to bottom.
-
-""""""""""""""""""""""""""""""""""""""""
-Filter modifications out of module files
-""""""""""""""""""""""""""""""""""""""""
-
-Modifications to certain environment variables in module files are generated by
-default. Suppose you would like to avoid having ``CPATH`` and ``LIBRARY_PATH``
-modified by your dotkit modules. Then :
-
-.. code-block:: yaml
-
-   modules:
-     dotkit:
-       all:
-         filter:
-           # Exclude changes to any of these variables
-           environment_blacklist: ['CPATH', 'LIBRARY_PATH']
-
-will generate dotkit module files that will not contain modifications to either
-``CPATH`` or ``LIBRARY_PATH`` and environment module files that instead will
-contain those modifications.
-
-"""""""""""""""""""""
-Autoload dependencies
-"""""""""""""""""""""
-
-The following lines in ``modules.yaml``:
-
-.. code-block:: yaml
-
-   modules:
-     tcl:
-       all:
-         autoload: 'direct'
-
-will produce environment module files that will automatically load their direct
-dependencies.
-
-.. note::
-   Allowed values for ``autoload`` statements
-     Allowed values for ``autoload`` statements are either ``none``, ``direct``
-     or ``all``. In ``tcl`` configuration it is possible to use the option
-     ``prerequisites`` that accepts the same values and will add ``prereq``
-     statements instead of automatically loading other modules.
-
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-Blacklist or whitelist the generation of specific module files
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-Sometimes it is desirable not to generate module files, a common use case being
-not providing the users with software built using the system compiler.
-
-A configuration file like:
-
-.. code-block:: yaml
-
-   modules:
-     tcl:
-       whitelist: ['gcc', 'llvm']  # Whitelist will have precedence over blacklist
-       blacklist: ['%gcc@4.4.7']   # Assuming gcc@4.4.7 is the system compiler
-
-will skip module file generation for anything that satisfies ``%gcc@4.4.7``,
-with the exception of specs that satisfy ``gcc`` or ``llvm``.
-
-""""""""""""""""""""""""""""""""""""""""""""""""
-Customize the naming scheme and insert conflicts
-""""""""""""""""""""""""""""""""""""""""""""""""
-
-A configuration file like:
-
-.. code-block:: yaml
-
-   modules:
-     tcl:
-       naming_scheme: '{name}/{version}-{compiler.name}-{compiler.version}'
-       all:
-         conflict: ['{name}', 'intel/14.0.1']
-
-will create module files that will conflict with ``intel/14.0.1`` and with the
-base directory of the same module, effectively preventing the possibility to
-load two or more versions of the same software at the same time.
-
-.. note::
-   Tokens available for the naming scheme
-     currently only the tokens shown in the example are available to construct
-     the naming scheme
-
-.. note::
-   The ``conflict`` option is ``tcl`` specific
-
-The names of environment modules generated by spack are not always easy to
-fully comprehend due to the long hash in the name. There are two module
-configuration options to help with that. The first is a global setting to
-adjust the hash length. It can be set anywhere from 0 to 32 and has a default
-length of 7. This is the representation of the hash in the module file name and
-does not affect the size of the package hash. Be aware that the smaller the
-hash length the more likely naming conflicts will occur. The following snippet
-shows how to set hash length in the module file names:
-
-.. code-block:: yaml
-
-   modules:
-     tcl:
-       hash_length: 7
-
-To help make module names more readable, and to help alleviate name conflicts
-with a short hash, one can use the ``suffixes`` option in the modules
-configuration file. This option will add strings to modules that match a spec.
-For instance, the following config options,
-
-.. code-block:: yaml
-
-   modules:
-     tcl:
-       all:
-         suffixes:
-           ^python@2.7.12: 'python-2.7.12'
-           ^openblas: 'openblas'
-
-will add a ``python-2.7.12`` version string to any packages compiled with
-python matching the spec, ``python@2.7.12``. This is useful to know which
-version of python a set of python extensions is associated with. Likewise, the
-``openblas`` string is attached to any program that has openblas in the spec,
-most likely via the ``+blas`` variant specification.  
-
-^^^^^^^^^^^^^^^^^^^^^^^^^
-Regenerating Module files
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Module and dotkit files are generated when packages are installed, and
-are placed in the directory ``share/spack/modules`` under the Spack
-root.  The command ``spack refresh`` will regenerate them all without
-re-building the packages; for example, if module format or options
-have changed:
-
-.. code-block:: console
-
-   $ spack module refresh
-   ==> Regenerating tcl module files.
-   ==> Regenerating dotkit module files.
-
-.. _extensions:
-
 ---------------------------
 Extensions & Python support
 ---------------------------
@@ -1439,7 +903,7 @@ prefixes, and you can see this with ``spack find --paths``:
    $ spack find --paths py-numpy
    ==> 1 installed packages.
    -- linux-debian7-x86_64 / gcc@4.4.7 --------------------------------
-       py-numpy@1.9.1  /g/g21/gamblin2/src/spack/opt/linux-debian7-x86_64/gcc@4.4.7/py-numpy@1.9.1-66733244
+       py-numpy@1.9.1  ~/spack/opt/linux-debian7-x86_64/gcc@4.4.7/py-numpy@1.9.1-66733244
 
 However, even though this package is installed, you cannot use it
 directly when you run ``python``:

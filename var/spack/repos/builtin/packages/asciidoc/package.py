@@ -25,7 +25,7 @@
 from spack import *
 
 
-class Asciidoc(Package):
+class Asciidoc(AutotoolsPackage):
     """A presentable text document format for writing articles, UNIX man
     pages and other small to medium sized documents."""
 
@@ -36,9 +36,5 @@ class Asciidoc(Package):
 
     depends_on('libxml2')
     depends_on('libxslt')
-
-    def install(self, spec, prefix):
-        configure('--prefix=%s' % prefix)
-
-        make()
-        make("install")
+    depends_on('docbook-xml')
+    depends_on('docbook-xsl')

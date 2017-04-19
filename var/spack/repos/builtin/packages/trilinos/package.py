@@ -25,6 +25,7 @@
 from spack import *
 import os
 import sys
+import platform
 
 # Trilinos is complicated to build, as an inspiration a couple of links to
 # other repositories which build it:
@@ -36,7 +37,7 @@ import sys
 # https://github.com/trilinos/Trilinos/issues/175
 
 
-class Trilinos(Package):
+class Trilinos(CMakePackage):
     """The Trilinos Project is an effort to develop algorithms and enabling
     technologies within an object-oriented software framework for the solution
     of large-scale, complex multi-physics engineering and scientific problems.
@@ -45,6 +46,11 @@ class Trilinos(Package):
     homepage = "https://trilinos.org/"
     base_url = "https://github.com/trilinos/Trilinos/archive"
 
+    version('develop',
+            git='https://github.com/trilinos/Trilinos.git', tag='develop')
+    version('master',
+            git='https://github.com/trilinos/Trilinos.git', tag='master')
+    version('12.10.1', '40f28628b63310f9bd17c26d9ebe32b1')
     version('12.8.1', '01c0026f1e2050842857db941060ecd5')
     version('12.6.4', 'c2ea7b5aa0d10bcabdb9b9a6e3bac3ea')
     version('12.6.3', '8de5cc00981a0ca0defea6199b2fe4c1')
@@ -61,12 +67,16 @@ class Trilinos(Package):
         return '%s/trilinos-release-%s.tar.gz' % \
             (Trilinos.base_url, version.dashed)
 
+    variant('xsdkflags',        default=False,
+            description='Compile using the default xSDK configuration')
     variant('metis',        default=True,
             description='Compile with METIS and ParMETIS')
     variant('mumps',        default=True,
             description='Compile with support for MUMPS solvers')
     variant('superlu-dist', default=True,
             description='Compile with SuperluDist solvers')
+    variant('superlu', default=False,
+            description='Compile with SuperLU solvers')
     variant('hypre',        default=True,
             description='Compile with Hypre preconditioner')
     variant('hdf5',         default=True,  description='Compile with HDF5')
@@ -80,8 +90,6 @@ class Trilinos(Package):
     variant('debug',        default=False,
             description='Builds a debug version of the libraries')
     variant('boost',        default=True, description='Compile with Boost')
-
-    depends_on('cmake', type='build')
 
     # Everything should be compiled with -fpic
     depends_on('blas')
@@ -107,13 +115,15 @@ class Trilinos(Package):
     depends_on('scalapack', when='+mumps')
     depends_on('superlu-dist@:4.3', when='@:12.6.1+superlu-dist')
     depends_on('superlu-dist', when='@12.6.2:+superlu-dist')
-    depends_on('hypre~internal-superlu', when='+hypre')
+    depends_on('superlu+fpic@4.3', when='+superlu')
+    # Trilinos can not be built against 64bit int hypre
+    depends_on('hypre~internal-superlu~int64', when='+hypre')
     depends_on('hdf5+mpi', when='+hdf5')
     depends_on('python', when='+python')
-    depends_on('py-numpy', when='+python')
+    depends_on('py-numpy', when='+python', type=('build', 'run'))
     depends_on('swig', when='+python')
 
-    patch('umfpack_from_suitesparse.patch')
+    patch('umfpack_from_suitesparse.patch', when='@:12.8.1')
 
     # check that the combination of variants makes sense
     def variants_check(self):
@@ -123,18 +133,22 @@ class Trilinos(Package):
             # working.
             raise RuntimeError('The superlu-dist variant can only be used' +
                                ' with Trilinos @12.0.1:')
+        if '+superlu-dist' in self.spec and '+superlu' in self.spec:
+            # Only choose one type of superlu
+            raise RuntimeError('The superlu-dist and superlu variant' +
+                               ' cannot be used together')
 
-    def install(self, spec, prefix):
+    def cmake_args(self):
+        spec = self.spec
         self.variants_check()
 
         cxx_flags = []
         options = []
-        options.extend(std_cmake_args)
 
         mpi_bin = spec['mpi'].prefix.bin
         # Note: -DXYZ_LIBRARY_NAMES= needs semicolon separated list of names
-        blas = spec['blas'].blas_libs
-        lapack = spec['lapack'].lapack_libs
+        blas = spec['blas'].libs
+        lapack = spec['lapack'].libs
         options.extend([
             '-DTrilinos_ENABLE_ALL_PACKAGES:BOOL=ON',
             '-DTrilinos_ENABLE_ALL_OPTIONAL_PACKAGES:BOOL=ON',
@@ -145,6 +159,10 @@ class Trilinos(Package):
                 'DEBUG' if '+debug' in spec else 'RELEASE'),
             '-DBUILD_SHARED_LIBS:BOOL=%s' % (
                 'ON' if '+shared' in spec else 'OFF'),
+            '-DTPL_FIND_SHARED_LIBS:BOOL=%s' % (
+                'ON' if '+shared' in spec else 'OFF'),
+            '-DTrilinos_LINK_SEARCH_START_STATIC:BOOL=%s' % (
+                'OFF' if '+shared' in spec else 'ON'),
             '-DTPL_ENABLE_MPI:BOOL=ON',
             '-DMPI_BASE_DIR:PATH=%s' % spec['mpi'].prefix,
             '-DTPL_ENABLE_BLAS=ON',
@@ -155,11 +173,40 @@ class Trilinos(Package):
             '-DLAPACK_LIBRARY_DIRS=%s' % ';'.join(lapack.directories),
             '-DTrilinos_ENABLE_EXPLICIT_INSTANTIATION:BOOL=ON',
             '-DTrilinos_ENABLE_CXX11:BOOL=ON',
-            '-DTPL_ENABLE_Netcdf:BOOL=ON',
-            '-DTPL_ENABLE_HYPRE:BOOL=%s' % (
-                'ON' if '+hypre' in spec else 'OFF')
+            '-DTPL_ENABLE_Netcdf:BOOL=ON'
         ])
 
+        if '.'.join(platform.mac_ver()[0].split('.')[:2]) == '10.12':
+            # use @rpath on Sierra due to limit of dynamic loader
+            options.append('-DCMAKE_MACOSX_RPATH=ON')
+        else:
+            options.append('-DCMAKE_INSTALL_NAME_DIR:PATH=%s/lib' % prefix)
+
+        # Force Trilinos to use the MPI wrappers instead of raw compilers
+        # this is needed on Apple systems that require full resolution of
+        # all symbols when linking shared libraries
+        options.extend([
+            '-DCMAKE_C_COMPILER=%s'       % spec['mpi'].mpicc,
+            '-DCMAKE_CXX_COMPILER=%s'     % spec['mpi'].mpicxx,
+            '-DCMAKE_Fortran_COMPILER=%s' % spec['mpi'].mpifc
+        ])
+        if '+hypre' in spec:
+            options.extend([
+                '-DTPL_ENABLE_HYPRE:BOOL=ON',
+                '-DHYPRE_INCLUDE_DIRS:PATH=%s' % spec['hypre'].prefix.include,
+                '-DHYPRE_LIBRARY_DIRS:PATH=%s' % spec['hypre'].prefix.lib
+            ])
+
+        if spec.satisfies('%intel') and spec.satisfies('@12.6.2'):
+            # Panzer uses some std:chrono that is not recognized by Intel
+            # Don't know which (maybe all) Trilinos versions this applies to
+            # Don't know which (maybe all) Intel versions this applies to
+            options.extend([
+                '-DTrilinos_ENABLE_Panzer:BOOL=OFF'
+            ])
+
+        if '+xsdkflags' in spec:
+            options.extend(['-DUSE_XSDK_DEFAULTS=YES'])
         if '+hdf5' in spec:
             options.extend([
                 '-DTPL_ENABLE_HDF5:BOOL=ON',
@@ -188,19 +235,15 @@ class Trilinos(Package):
             options.extend(['-DTPL_ENABLE_HDF5:BOOL=OFF'])
 
         # Fortran lib
-        libgfortran = os.path.dirname(os.popen(
-            '%s --print-file-name libgfortran.a' %
-            join_path(mpi_bin, 'mpif90')).read())
-        options.extend([
-            '-DTrilinos_EXTRA_LINK_FLAGS:STRING=-L%s/ -lgfortran' % (
-                libgfortran),
-            '-DTrilinos_ENABLE_Fortran=ON'
-        ])
-
-        # for build-debug only:
-        # options.extend([
-        #    '-DCMAKE_VERBOSE_MAKEFILE:BOOL=TRUE'
-        # ])
+        if spec.satisfies('%gcc') or spec.satisfies('%clang'):
+            libgfortran = os.path.dirname(os.popen(
+                '%s --print-file-name libgfortran.a' %
+                join_path(mpi_bin, 'mpif90')).read())
+            options.extend([
+                '-DTrilinos_EXTRA_LINK_FLAGS:STRING=-L%s/ -lgfortran' % (
+                    libgfortran),
+                '-DTrilinos_ENABLE_Fortran=ON'
+            ])
 
         # suite-sparse related
         if '+suite-sparse' in spec:
@@ -296,6 +339,20 @@ class Trilinos(Package):
                 '-DTPL_ENABLE_SuperLUDist:BOOL=OFF',
             ])
 
+        # superlu:
+        if '+superlu' in spec:
+            options.extend([
+                '-DTPL_ENABLE_SuperLU:BOOL=ON',
+                '-DSuperLU_LIBRARY_DIRS=%s' %
+                spec['superlu'].prefix.lib,
+                '-DSuperLU_INCLUDE_DIRS=%s' %
+                spec['superlu'].prefix.include
+            ])
+        else:
+            options.extend([
+                '-DTPL_ENABLE_SuperLU:BOOL=OFF',
+            ])
+
         # python
         if '+python' in spec:
             options.extend([
@@ -317,31 +374,32 @@ class Trilinos(Package):
             '-DTrilinos_ENABLE_Pike=OFF',
             '-DTrilinos_ENABLE_STK=OFF'
         ])
+
+        # disable due to compiler / config errors:
+        if spec.satisfies('%xl') or spec.satisfies('%xl_r'):
+            options.extend([
+                '-DTrilinos_ENABLE_Pamgen:BOOL=OFF',
+                '-DTrilinos_ENABLE_Stokhos:BOOL=OFF'
+            ])
+
         if sys.platform == 'darwin':
             options.extend([
                 '-DTrilinos_ENABLE_FEI=OFF'
             ])
+        return options
 
-        with working_dir('spack-build', create=True):
-            cmake('..', *options)
-            make()
-            make('install')
-
-            # When trilinos is built with Python, libpytrilinos is included
-            # through cmake configure files. Namely, Trilinos_LIBRARIES in
-            # TrilinosConfig.cmake contains pytrilinos. This leads to a
-            # run-time error: Symbol not found: _PyBool_Type and prevents
-            # Trilinos to be used in any C++ code, which links executable
-            # against the libraries listed in Trilinos_LIBRARIES.  See
-            # https://github.com/Homebrew/homebrew-science/issues/2148#issuecomment-103614509
-            # A workaround it to remove PyTrilinos from the COMPONENTS_LIST :
-            if '+python' in self.spec:
-                filter_file(r'(SET\(COMPONENTS_LIST.*)(PyTrilinos;)(.*)',
-                            (r'\1\3'),
-                            '%s/cmake/Trilinos/TrilinosConfig.cmake' %
-                            prefix.lib)
-
-            # The shared libraries are not installed correctly on Darwin;
-            # correct this
-            if (sys.platform == 'darwin') and ('+shared' in spec):
-                fix_darwin_install_name(prefix.lib)
+    @run_after('install')
+    def filter_python(self):
+        # When trilinos is built with Python, libpytrilinos is included
+        # through cmake configure files. Namely, Trilinos_LIBRARIES in
+        # TrilinosConfig.cmake contains pytrilinos. This leads to a
+        # run-time error: Symbol not found: _PyBool_Type and prevents
+        # Trilinos to be used in any C++ code, which links executable
+        # against the libraries listed in Trilinos_LIBRARIES.  See
+        # https://github.com/Homebrew/homebrew-science/issues/2148#issuecomment-103614509
+        # A workaround is to remove PyTrilinos from the COMPONENTS_LIST :
+        if '+python' in self.spec:
+            filter_file(r'(SET\(COMPONENTS_LIST.*)(PyTrilinos;)(.*)',
+                        (r'\1\3'),
+                        '%s/cmake/Trilinos/TrilinosConfig.cmake' %
+                        self.prefix.lib)

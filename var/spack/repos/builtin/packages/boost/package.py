@@ -25,6 +25,7 @@
 from spack import *
 import sys
 import os
+from glob import glob
 
 
 class Boost(Package):
@@ -41,6 +42,7 @@ class Boost(Package):
     list_url = "http://sourceforge.net/projects/boost/files/boost/"
     list_depth = 2
 
+    version('1.63.0', '1c837ecd990bb022d07e7aab32b09847')
     version('1.62.0', '5fb94629535c19e48703bdb2b2e9490f')
     version('1.61.0', '6095876341956f65f9d35939ccea1a9f')
     version('1.60.0', '65a840e1a0b13a558ff19eeb2c4f0cbe')
@@ -128,6 +130,16 @@ class Boost(Package):
     # Patch fix from https://svn.boost.org/trac/boost/ticket/11856
     patch('boost_11856.patch', when='@1.60.0%gcc@4.4.7')
 
+    # Patch fix from https://svn.boost.org/trac/boost/ticket/11120
+    patch('python_jam.patch', when='^python@3:')
+
+    # Patch fix from https://svn.boost.org/trac/boost/ticket/10125
+    patch('boost_10125.patch', when='@1.55.0%gcc@5.0:5.9')
+
+    # Patch fix for IBM XL compiler
+    patch('xl_1_62_0_le.patch', when='@1.62.0%xl_r')
+    patch('xl_1_62_0_le.patch', when='@1.62.0%xl')
+
     def url_for_version(self, version):
         """
         Handle Boost's weird URLs,
@@ -144,7 +156,9 @@ class Boost(Package):
 
         toolsets = {'g++': 'gcc',
                     'icpc': 'intel',
-                    'clang++': 'clang'}
+                    'clang++': 'clang',
+                    'xlc++': 'xlcpp',
+                    'xlc++_r': 'xlcpp'}
 
         if spec.satisfies('@1.47:'):
             toolsets['icpc'] += '-linux'
@@ -155,14 +169,33 @@ class Boost(Package):
         # fallback to gcc if no toolset found
         return 'gcc'
 
+    def bjam_python_line(self, spec):
+        from os.path import dirname, splitext
+        pydir = 'python%s.%s*' % spec['python'].version.version[:2]
+        incs = join_path(spec['python'].prefix.include, pydir, "pyconfig.h")
+        incs = glob(incs)
+        incs = " ".join([dirname(u) for u in incs])
+
+        pylib = 'libpython%s.%s*' % spec['python'].version.version[:2]
+        all_libs = join_path(spec['python'].prefix.lib, pylib)
+        libs = [u for u in all_libs if splitext(u)[1] == dso_suffix]
+        if len(libs) == 0:
+            libs = [u for u in all_libs if splitext(u)[1] == '.a']
+
+        libs = " ".join(libs)
+        return 'using python : %s : %s : %s : %s ;\n' % (
+            spec['python'].version.up_to(2),
+            join_path(spec['python'].prefix.bin, 'python'),
+            incs, libs
+        )
+
     def determine_bootstrap_options(self, spec, withLibs, options):
         boostToolsetId = self.determine_toolset(spec)
         options.append('--with-toolset=%s' % boostToolsetId)
         options.append("--with-libraries=%s" % ','.join(withLibs))
 
         if '+python' in spec:
-            options.append('--with-python=%s' %
-                           join_path(spec['python'].prefix.bin, 'python'))
+            options.append('--with-python=%s' % python_exe)
 
         with open('user-config.jam', 'w') as f:
             # Boost may end up using gcc even though clang+gfortran is set in
@@ -180,9 +213,7 @@ class Boost(Package):
                 f.write('using mpi : %s ;\n' %
                         join_path(spec['mpi'].prefix.bin, 'mpicxx'))
             if '+python' in spec:
-                f.write('using python : %s : %s ;\n' %
-                        (spec['python'].version.up_to(2),
-                         join_path(spec['python'].prefix.bin, 'python')))
+                f.write(self.bjam_python_line(spec))
 
     def determine_b2_options(self, spec, options):
         if '+debug' in spec:
@@ -230,6 +261,13 @@ class Boost(Package):
             options.extend([
                 'toolset=%s' % self.determine_toolset(spec)
             ])
+
+        # clang is not officially supported for pre-compiled headers
+        # and at least in clang 3.9 still fails to build
+        #   http://www.boost.org/build/doc/html/bbv2/reference/precompiled_headers.html
+        #   https://svn.boost.org/trac/boost/ticket/12496
+        if spec.satisfies('%clang'):
+            options.extend(['pch=off'])
 
         return threadingOpts
 

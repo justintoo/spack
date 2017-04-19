@@ -33,13 +33,13 @@ from llnl.util.filesystem import working_dir
 import spack
 from spack.util.executable import which
 
-description = "Debugging commands for troubleshooting Spack."
+description = "debugging commands for troubleshooting Spack"
 
 
 def setup_parser(subparser):
     sp = subparser.add_subparsers(metavar='SUBCOMMAND', dest='debug_command')
     sp.add_parser('create-db-tarball',
-                  help="Create a tarball of Spack's installation metadata.")
+                  help="create a tarball of Spack's installation metadata")
 
 
 def _debug_tarball_suffix():
@@ -74,16 +74,16 @@ def create_db_tarball(args):
     tarball_name = "spack-db.%s.tar.gz" % _debug_tarball_suffix()
     tarball_path = os.path.abspath(tarball_name)
 
-    base = os.path.basename(spack.install_path)
+    base = os.path.basename(spack.store.root)
     transform_args = []
     if 'GNU' in tar('--version', output=str):
         transform_args = ['--transform', 's/^%s/%s/' % (base, tarball_name)]
     else:
         transform_args = ['-s', '/^%s/%s/' % (base, tarball_name)]
 
-    wd = os.path.dirname(spack.install_path)
+    wd = os.path.dirname(spack.store.root)
     with working_dir(wd):
-        files = [spack.installed_db._index_path]
+        files = [spack.store.db._index_path]
         files += glob('%s/*/*/*/.spack/spec.yaml' % base)
         files = [os.path.relpath(f) for f in files]
 

@@ -30,25 +30,26 @@ from llnl.util.tty.colify import colify
 import spack
 import spack.cmd
 import spack.cmd.find
+import spack.store
 
-description = "List extensions for package."
+description = "list extensions for package"
 
 
 def setup_parser(subparser):
     format_group = subparser.add_mutually_exclusive_group()
     format_group.add_argument(
         '-l', '--long', action='store_true', dest='long',
-        help='Show dependency hashes as well as versions.')
+        help='show dependency hashes as well as versions')
     format_group.add_argument(
         '-p', '--paths', action='store_const', dest='mode', const='paths',
-        help='Show paths to extension install directories')
+        help='show paths to extension install directories')
     format_group.add_argument(
         '-d', '--deps', action='store_const', dest='mode', const='deps',
-        help='Show full dependency DAG of extensions')
+        help='show full dependency DAG of extensions')
 
     subparser.add_argument(
         'spec', nargs=argparse.REMAINDER,
-        help='Spec of package to list extensions for')
+        help='spec of package to list extensions for')
 
 
 def extensions(parser, args):
@@ -86,8 +87,9 @@ def extensions(parser, args):
     #
     # List specs of installed extensions.
     #
-    installed = [
-        s.spec for s in spack.installed_db.installed_extensions_for(spec)]
+    installed = [s.spec
+                 for s in spack.store.db.installed_extensions_for(spec)]
+
     print
     if not installed:
         tty.msg("None installed.")
@@ -98,7 +100,7 @@ def extensions(parser, args):
     #
     # List specs of activated extensions.
     #
-    activated = spack.install_layout.extension_map(spec)
+    activated = spack.store.layout.extension_map(spec)
     print
     if not activated:
         tty.msg("None activated.")

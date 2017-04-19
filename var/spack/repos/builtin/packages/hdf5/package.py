@@ -22,15 +22,14 @@
 # License along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 ##############################################################################
-
 from spack import *
 import shutil
 
 
-class Hdf5(Package):
+class Hdf5(AutotoolsPackage):
     """HDF5 is a data model, library, and file format for storing and managing
-       data. It supports an unlimited variety of datatypes, and is designed for
-       flexible and efficient I/O and for high volume and complex data.
+    data. It supports an unlimited variety of datatypes, and is designed for
+    flexible and efficient I/O and for high volume and complex data.
     """
 
     homepage = "http://www.hdfgroup.org/HDF5/"
@@ -40,8 +39,15 @@ class Hdf5(Package):
 
     version('1.10.0-patch1', '9180ff0ef8dc2ef3f61bd37a7404f295')
     version('1.10.0', 'bdc935337ee8282579cd6bc4270ad199')
+    version('1.8.18', 'dd2148b740713ca0295442ec683d7b1c',
+            # The link for the latest version differs from the links for
+            # the previous releases. Do not forget to remove this once
+            # the version 1.8.18 is not the latest one for the 1.8.* branch.
+            url='http://hdfgroup.org/ftp/HDF5/current18/src/hdf5-1.8.18.tar.gz')
+    version('1.8.17', '7d572f8f3b798a628b8245af0391a0ca')
     version('1.8.16', 'b8ed9a36ae142317f88b0c7ef4b9c618')
     version('1.8.15', '03cccb5b33dbe975fdcd8ae9dc021f24')
+    version('1.8.14', 'a482686e733514a51cde12d6fe5c5d95')
     version('1.8.13', 'c03426e9e77d7766944654280b467289')
     version('1.8.12', 'd804802feb99b87fc668a90e6fa34411')
 
@@ -57,18 +63,22 @@ class Hdf5(Package):
     variant('szip', default=False, description='Enable szip support')
     variant('threadsafe', default=False,
             description='Enable thread-safe capabilities')
+    variant('pic', default=True,
+            description='Produce position-independent code (for shared libs)')
 
-    depends_on("mpi", when='+mpi')
-    depends_on("szip", when='+szip')
-    depends_on("zlib@1.1.2:")
+    depends_on('mpi', when='+mpi')
+    depends_on('szip', when='+szip')
+    depends_on('zlib@1.1.2:')
 
-    def validate(self, spec):
+    @run_before('configure')
+    def validate(self):
         """
         Checks if incompatible variants have been activated at the same time
 
         :param spec: spec of the package
         :raises RuntimeError: in case of inconsistencies
         """
+        spec = self.spec
         if '+fortran' in spec and not self.compiler.fc:
             msg = 'cannot build a fortran variant without a fortran compiler'
             raise RuntimeError(msg)
@@ -77,8 +87,8 @@ class Hdf5(Package):
             msg = 'cannot use variant +threadsafe with either +cxx or +fortran'
             raise RuntimeError(msg)
 
-    def install(self, spec, prefix):
-        self.validate(spec)
+    def configure_args(self):
+        spec = self.spec
         # Handle compilation after spec validation
         extra_args = []
 
@@ -113,6 +123,11 @@ class Hdf5(Package):
             if spec.satisfies('@:1.8.16'):
                 extra_args.append('--enable-fortran2003')
 
+        if '+pic' in spec:
+            extra_args.append('CFLAGS={0}'.format(self.compiler.pic_flag))
+            extra_args.append('CXXFLAGS={0}'.format(self.compiler.pic_flag))
+            extra_args.append('FCFLAGS={0}'.format(self.compiler.pic_flag))
+
         if '+mpi' in spec:
             # The HDF5 configure script warns if cxx and mpi are enabled
             # together. There doesn't seem to be a real reason for this, except
@@ -139,21 +154,27 @@ class Hdf5(Package):
                 '--disable-hl',
             ])
 
-        configure(
-            "--prefix=%s" % prefix,
-            "--with-zlib=%s" % spec['zlib'].prefix,
-            *extra_args)
-        make()
+        return ["--with-zlib=%s" % spec['zlib'].prefix] + extra_args
 
-        if self.run_tests:
-            make("check")
+    def configure(self, spec, prefix):
+        # Run the default autotools package configure
+        super(Hdf5, self).configure(spec, prefix)
 
-        make("install")
-        self.check_install(spec)
+        if '@:1.8.14' in spec:
+            # On Ubuntu14, HDF5 1.8.12 (and maybe other versions)
+            # mysteriously end up with "-l -l" in the postdeps in the
+            # libtool script.  Patch this by removing the spurious -l's.
+            filter_file(
+                r'postdeps="([^"]*)"',
+                lambda m: 'postdeps="%s"' % ' '.join(
+                    arg for arg in m.group(1).split(' ') if arg != '-l'),
+                'libtool')
 
-    def check_install(self, spec):
-        "Build and run a small program to test the installed HDF5 library"
-        print "Checking HDF5 installation..."
+    @run_after('install')
+    def check_install(self):
+        # Build and run a small program to test the installed HDF5 library
+        spec = self.spec
+        print("Checking HDF5 installation...")
         checkdir = "spack-check"
         with working_dir(checkdir, create=True):
             source = r"""
@@ -175,14 +196,12 @@ HDF5 version {version} {version}
             with open("check.c", 'w') as f:
                 f.write(source)
             if '+mpi' in spec:
-                cc = which('%s' % spec['mpi'].mpicc)
+                cc = Executable(spec['mpi'].mpicc)
             else:
-                cc = which('cc')
-            # TODO: Automate these path and library settings
-            cc('-c', "-I%s" % join_path(spec.prefix, "include"), "check.c")
-            cc('-o', "check", "check.o",
-               "-L%s" % join_path(spec.prefix, "lib"), "-lhdf5",
-               "-lz")
+                cc = Executable(self.compiler.cc)
+            cc(*(['-c', "check.c"] + spec['hdf5'].cppflags.split()))
+            cc(*(['-o', "check", "check.o"] +
+                 spec['hdf5'].libs.ld_flags.split()))
             try:
                 check = Executable('./check')
                 output = check(return_output=True)
@@ -190,19 +209,24 @@ HDF5 version {version} {version}
                 output = ""
             success = output == expected
             if not success:
-                print "Produced output does not match expected output."
-                print "Expected output:"
-                print '-' * 80
-                print expected
-                print '-' * 80
-                print "Produced output:"
-                print '-' * 80
-                print output
-                print '-' * 80
+                print("Produced output does not match expected output.")
+                print("Expected output:")
+                print('-' * 80)
+                print(expected)
+                print('-' * 80)
+                print("Produced output:")
+                print('-' * 80)
+                print(output)
+                print('-' * 80)
                 raise RuntimeError("HDF5 install check failed")
         shutil.rmtree(checkdir)
 
     def url_for_version(self, version):
+        # If we have a specific URL for this version, return it.
+        version_urls = self.version_urls()
+        if version in version_urls:
+            return version_urls[version]
+
         base_url = "http://www.hdfgroup.org/ftp/HDF5/releases"
 
         if version == Version("1.2.2"):

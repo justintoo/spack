@@ -25,14 +25,16 @@
 from spack import *
 
 
-class ParallelNetcdf(Package):
+class ParallelNetcdf(AutotoolsPackage):
     """Parallel netCDF (PnetCDF) is a library providing high-performance
     parallel I/O while still maintaining file-format compatibility with
     Unidata's NetCDF."""
 
     homepage = "https://trac.mcs.anl.gov/projects/parallel-netcdf"
     url      = "http://cucis.ece.northwestern.edu/projects/PnetCDF/Release/parallel-netcdf-1.6.1.tar.gz"
+    list_url = "http://cucis.ece.northwestern.edu/projects/PnetCDF/download.html"
 
+    version('1.8.0', '825825481aa629eb82f21ca37afff1609b8eeb07')
     version('1.7.0', '267eab7b6f9dc78c4d0e6def2def3aea4bc7c9f0')
     version('1.6.1', '62a094eb952f9d1e15f07d56e535052604f1ac34')
 
@@ -41,13 +43,18 @@ class ParallelNetcdf(Package):
     variant('fpic', default=True,
             description='Produce position-independent code (for shared libs)')
 
-    depends_on("m4", type='build')
-    depends_on("mpi")
+    depends_on('mpi')
+
+    depends_on('m4', type='build')
 
     # See:
     # https://trac.mcs.anl.gov/projects/parallel-netcdf/browser/trunk/INSTALL
-    def install(self, spec, prefix):
-        args = list()
+    def configure_args(self):
+        spec = self.spec
+
+        args = ['--with-mpi={0}'.format(spec['mpi'].prefix)]
+        args.append('SEQ_CC=%s' % spack_cc)
+
         if '+fpic' in spec:
             args.extend(['CFLAGS=-fPIC', 'CXXFLAGS=-fPIC', 'FFLAGS=-fPIC'])
         if '~cxx' in spec:
@@ -55,8 +62,4 @@ class ParallelNetcdf(Package):
         if '~fortran' in spec:
             args.append('--disable-fortran')
 
-        args.extend(["--prefix=%s" % prefix,
-                     "--with-mpi=%s" % spec['mpi'].prefix])
-        configure(*args)
-        make()
-        make("install")
+        return args

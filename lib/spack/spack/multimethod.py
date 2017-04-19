@@ -105,7 +105,17 @@ class SpecMultiMethod(object):
 
     def __get__(self, obj, objtype):
         """This makes __call__ support instance methods."""
-        return functools.partial(self.__call__, obj)
+        # Method_list is a list of tuples (constraint, method)
+        # Here we are going to assume that we have at least one
+        # element in the list. The first registered function
+        # will be the one 'wrapped'.
+        wrapped_method = self.method_list[0][1]
+        # Call functools.wraps manually to get all the attributes
+        # we need to be disguised as the wrapped_method
+        func = functools.wraps(wrapped_method)(
+            functools.partial(self.__call__, obj)
+        )
+        return func
 
     def __call__(self, package_self, *args, **kwargs):
         """Find the first method with a spec that matches the
@@ -118,10 +128,16 @@ class SpecMultiMethod(object):
 
         if self.default:
             return self.default(package_self, *args, **kwargs)
+
         else:
-            raise NoSuchMethodError(
-                type(package_self), self.__name__, spec,
-                [m[0] for m in self.method_list])
+            superclass = super(package_self.__class__, package_self)
+            superclass_fn = getattr(superclass, self.__name__, None)
+            if callable(superclass_fn):
+                return superclass_fn(*args, **kwargs)
+            else:
+                raise NoSuchMethodError(
+                    type(package_self), self.__name__, spec,
+                    [m[0] for m in self.method_list])
 
     def __str__(self):
         return "SpecMultiMethod {\n\tdefault: %s,\n\tspecs: %s\n}" % (

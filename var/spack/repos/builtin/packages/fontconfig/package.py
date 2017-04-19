@@ -25,8 +25,8 @@
 from spack import *
 
 
-class Fontconfig(Package):
-    """Fontconfig customizing font access"""
+class Fontconfig(AutotoolsPackage):
+    """Fontconfig is a library for configuring/customizing font access"""
     homepage = "http://www.freedesktop.org/wiki/Software/fontconfig/"
     url      = "http://www.freedesktop.org/software/fontconfig/release/fontconfig-2.11.1.tar.gz"
 
@@ -35,11 +35,21 @@ class Fontconfig(Package):
     depends_on('freetype')
     depends_on('libxml2')
     depends_on('pkg-config', type='build')
+    depends_on('font-util')
 
-    def install(self, spec, prefix):
-        configure("--prefix=%s" % prefix,
-                  "--enable-libxml2",
-                  "--disable-docs")
+    def configure_args(self):
+        font_path = join_path(self.spec['font-util'].prefix, 'share', 'fonts')
 
-        make()
-        make("install")
+        return ["--prefix={0}".format(self.prefix),
+                "--enable-libxml2",
+                "--disable-docs",
+                "--with-default-fonts={0}".format(font_path)]
+
+    @run_after('install')
+    def system_fonts(self):
+        # point configuration file to system-install fonts
+        # gtk applications were failing to display text without this
+        config_file = join_path(self.prefix, 'etc', 'fonts', 'fonts.conf')
+        filter_file('<dir prefix="xdg">fonts</dir>',
+                    '<dir prefix="xdg">fonts</dir><dir>/usr/share/fonts</dir>',
+                    config_file)

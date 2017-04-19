@@ -23,16 +23,18 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 ##############################################################################
 from spack import *
-import sys
 
 
-class M4(Package):
+class M4(AutotoolsPackage):
     """GNU M4 is an implementation of the traditional Unix macro processor."""
-    homepage = "https://www.gnu.org/software/m4/m4.html"
-    url      = "ftp://ftp.gnu.org/gnu/m4/m4-1.4.17.tar.gz"
 
+    homepage = "https://www.gnu.org/software/m4/m4.html"
+    url      = "https://ftp.gnu.org/gnu/m4/m4-1.4.18.tar.gz"
+
+    version('1.4.18', 'a077779db287adf4e12a035029002d28')
     version('1.4.17', 'a5e9954b1dae036762f7b13673a2cf76')
 
+    patch('gnulib-pgi.patch', when='@1.4.18')
     patch('pgi.patch', when='@1.4.17')
 
     variant('sigsegv', default=True,
@@ -40,19 +42,22 @@ class M4(Package):
 
     depends_on('libsigsegv', when='+sigsegv')
 
-    def install(self, spec, prefix):
-        configure_args = []
-        if 'libsigsegv' in spec:
-            configure_args.append('--with-libsigsegv-prefix=%s' %
-                                  spec['libsigsegv'].prefix)
+    build_directory = 'spack-build'
+
+    def configure_args(self):
+        spec = self.spec
+        args = ['--enable-c++']
+
+        if '+sigsegv' in spec:
+            args.append('--with-libsigsegv-prefix={0}'.format(
+                spec['libsigsegv'].prefix))
         else:
-            configure_args.append('--without-libsigsegv-prefix')
+            args.append('--without-libsigsegv-prefix')
 
         # http://lists.gnu.org/archive/html/bug-m4/2016-09/msg00002.html
-        if (sys.platform == "darwin") and (spec.satisfies('%gcc')) and \
-           (spec.architecture.platform_os.version == "10.12"):
-            configure_args.append('ac_cv_type_struct_sched_param=yes')
+        arch = spec.architecture
+        if (arch.platform == 'darwin' and arch.platform_os == 'sierra' and
+            '%gcc' in spec):
+            args.append('ac_cv_type_struct_sched_param=yes')
 
-        configure("--prefix=%s" % prefix, *configure_args)
-        make()
-        make("install")
+        return args

@@ -71,7 +71,10 @@ class Atlas(Package):
         # TODO: using, say, MSRs.  Or move this to a variant.
 
     def install(self, spec, prefix):
-
+        # reference to other package managers
+        # https://github.com/hpcugent/easybuild-easyblocks/blob/master/easybuild/easyblocks/a/atlas.py
+        # https://github.com/macports/macports-ports/blob/master/math/atlas/Portfile
+        # https://github.com/Homebrew/homebrew-science/pull/3571
         options = []
         if '+shared' in spec:
             options.extend([
@@ -92,10 +95,8 @@ class Atlas(Package):
 
         # Lapack resource to provide full lapack build. Note that
         # ATLAS only provides a few LAPACK routines natively.
-        lapack_stage = self.stage[1]
-        lapack_tarfile = os.path.basename(lapack_stage.fetcher.url)
-        lapack_tarfile_path = join_path(lapack_stage.path, lapack_tarfile)
-        options.append('--with-netlib-lapack-tarfile=%s' % lapack_tarfile_path)
+        options.append('--with-netlib-lapack-tarfile=%s' %
+                       self.stage[1].archive_file)
 
         with working_dir('spack-build', create=True):
             configure = Executable('../configure')
@@ -112,7 +113,7 @@ class Atlas(Package):
             self.install_test()
 
     @property
-    def blas_libs(self):
+    def libs(self):
         # libsatlas.[so,dylib,dll ] contains all serial APIs (serial lapack,
         # serial BLAS), and all ATLAS symbols needed to support them. Whereas
         # libtatlas.[so,dylib,dll ] is parallel (multithreaded) version.
@@ -134,10 +135,6 @@ class Atlas(Package):
             to_find, root=self.prefix, shared=shared, recurse=True
         )
 
-    @property
-    def lapack_libs(self):
-        return self.blas_libs
-
     def install_test(self):
         source_file = join_path(os.path.dirname(self.module.__file__),
                                 'test_cblas_dgemm.c')
@@ -145,7 +142,7 @@ class Atlas(Package):
                                  'test_cblas_dgemm.output')
 
         include_flags = ["-I%s" % self.spec.prefix.include]
-        link_flags = self.lapack_libs.ld_flags.split()
+        link_flags = self.libs.ld_flags.split()
 
         output = compile_c_and_execute(source_file, include_flags, link_flags)
         compare_output_file(output, blessed_file)

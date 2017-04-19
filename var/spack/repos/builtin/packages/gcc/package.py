@@ -1,3 +1,27 @@
+##############################################################################
+# Copyright (c) 2013-2016, Lawrence Livermore National Security, LLC.
+# Produced at the Lawrence Livermore National Laboratory.
+#
+# This file is part of Spack.
+# Created by Todd Gamblin, tgamblin@llnl.gov, All rights reserved.
+# LLNL-CODE-647188
+#
+# For details, see https://github.com/llnl/spack
+# Please also see the LICENSE file for our notice and the LGPL.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License (as
+# published by the Free Software Foundation) version 2.1, February 1999.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the IMPLIED WARRANTY OF
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the terms and
+# conditions of the GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+##############################################################################
 from spack import *
 
 from contextlib import closing
@@ -6,7 +30,7 @@ import sys
 from os.path import isfile
 
 
-class Gcc(Package):
+class Gcc(AutotoolsPackage):
     """The GNU Compiler Collection includes front ends for C, C++,
        Objective-C, Fortran, and Java."""
     homepage = "https://gcc.gnu.org"
@@ -15,6 +39,7 @@ class Gcc(Package):
     list_url = 'http://ftp.gnu.org/gnu/gcc/'
     list_depth = 2
 
+    version('6.3.0', '677a7623c7ef6ab99881bc4e048debb6')
     version('6.2.0', '9768625159663b300ae4de2f4745fcc4')
     version('6.1.0', '8fb6cb98b8459f5863328380fbf06bd1')
     version('5.4.0', '4c626ac2a83ef30dfb9260e6f59c2b30')
@@ -58,15 +83,19 @@ class Gcc(Package):
         provides('golang', when='@4.7.1:')
 
     patch('piclibs.patch', when='+piclibs')
+    patch('gcc-backport.patch', when='@4.7:4.9.2,5:5.3')
 
-    def install(self, spec, prefix):
+    def configure_args(self):
+        spec = self.spec
+        prefix = self.spec.prefix
         # libjava/configure needs a minor fix to install into spack paths.
         filter_file(r"'@.*@'", "'@[[:alnum:]]*@'", 'libjava/configure',
                     string=True)
 
         enabled_languages = set(('c', 'c++', 'fortran', 'java', 'objc'))
 
-        if spec.satisfies("@4.7.1:") and sys.platform != 'darwin':
+        if spec.satisfies("@4.7.1:") and sys.platform != 'darwin' and \
+           not (spec.satisfies('@:4.9.3') and 'ppc64le' in spec.architecture):
             enabled_languages.add('go')
 
         # Fix a standard header file for OS X Yosemite that
@@ -111,18 +140,15 @@ class Gcc(Package):
             darwin_options = ["--with-build-config=bootstrap-debug"]
             options.extend(darwin_options)
 
-        build_dir = join_path(self.stage.path, 'spack-build')
-        configure = Executable(join_path(self.stage.source_path, 'configure'))
-        with working_dir(build_dir, create=True):
-            # Rest of install is straightforward.
-            configure(*options)
-            if sys.platform == 'darwin':
-                make("bootstrap")
-            else:
-                make()
-            make("install")
+        return options
 
-        self.write_rpath_specs()
+    build_directory = 'spack-build'
+
+    @property
+    def build_targets(self):
+        if sys.platform == 'darwin':
+            return ['bootstrap']
+        return []
 
     @property
     def spec_dir(self):
@@ -130,6 +156,7 @@ class Gcc(Package):
         spec_dir = glob("%s/lib64/gcc/*/*" % self.prefix)
         return spec_dir[0] if spec_dir else None
 
+    @run_after('install')
     def write_rpath_specs(self):
         """Generate a spec file so the linker adds a rpath to the libs
            the compiler used to build the executable."""

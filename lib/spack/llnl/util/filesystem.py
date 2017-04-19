@@ -25,7 +25,6 @@
 import collections
 import errno
 import fileinput
-import getpass
 import glob
 import numbers
 import os
@@ -46,12 +45,12 @@ __all__ = [
     'can_access',
     'change_sed_delimiter',
     'copy_mode',
-    'expand_user',
     'filter_file',
     'find_libraries',
     'fix_darwin_install_name',
     'force_remove',
     'force_symlink',
+    'hide_files',
     'install',
     'install_tree',
     'is_exe',
@@ -229,16 +228,6 @@ def is_exe(path):
     return os.path.isfile(path) and os.access(path, os.X_OK)
 
 
-def expand_user(path):
-    """Find instances of '%u' in a path and replace with the current user's
-       username."""
-    username = getpass.getuser()
-    if not username and '%u' in path:
-        tty.die("Couldn't get username to complete path '%s'" % path)
-
-    return path.replace('%u', username)
-
-
 def mkdirp(*paths):
     """Creates a directory, as well as parent directories if needed."""
     for path in paths:
@@ -267,6 +256,18 @@ def working_dir(dirname, **kwargs):
     os.chdir(dirname)
     yield
     os.chdir(orig_dir)
+
+
+@contextmanager
+def hide_files(*file_list):
+    try:
+        baks = ['%s.bak' % f for f in file_list]
+        for f, bak in zip(file_list, baks):
+            shutil.move(f, bak)
+        yield
+    finally:
+        for f, bak in zip(file_list, baks):
+            shutil.move(bak, f)
 
 
 def touch(path):
@@ -467,7 +468,12 @@ def fix_darwin_install_name(path):
         # fix all dependencies:
         for dep in deps:
             for loc in libs:
-                if dep == os.path.basename(loc):
+                # We really want to check for either
+                #     dep == os.path.basename(loc)   or
+                #     dep == join_path(builddir, os.path.basename(loc)),
+                # but we don't know builddir (nor how symbolic links look
+                # in builddir). We thus only compare the basenames.
+                if os.path.basename(dep) == os.path.basename(loc):
                     subprocess.Popen(
                         ["install_name_tool", "-change", dep, loc, lib],
                         stdout=subprocess.PIPE).communicate()[0]
@@ -575,20 +581,22 @@ def find_libraries(args, root, shared=True, recurse=False):
     """Returns an iterable object containing a list of full paths to
     libraries if found.
 
-    Args:
-        args: iterable object containing a list of library names to \
-            search for (e.g. 'libhdf5')
-        root: root folder where to start searching
-        shared: if True searches for shared libraries, otherwise for static
-        recurse: if False search only root folder, if True descends top-down \
-            from the root
+    :param args: Library name(s) to search for
+    :type args: str or collections.Sequence
+    :param str root: The root directory to start searching from
+    :param bool shared: if True searches for shared libraries,
+        otherwise for static
+    :param bool recurse: if False search only root folder,
+        if True descends top-down from the root
 
-    Returns:
-        list of full paths to the libraries that have been found
+    :returns: The libraries that have been found
+    :rtype: LibraryList
     """
-    if not isinstance(args, collections.Sequence) or isinstance(args, str):
-        message = '{0} expects a sequence of strings as first argument'
-        message += ' [got {1} instead]'
+    if isinstance(args, str):
+        args = [args]
+    elif not isinstance(args, collections.Sequence):
+        message = '{0} expects a string or sequence of strings as the '
+        message += 'first argument [got {1} instead]'
         raise TypeError(message.format(find_libraries.__name__, type(args)))
 
     # Construct the right suffix for the library

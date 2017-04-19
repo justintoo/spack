@@ -28,7 +28,7 @@ The ``virtual`` module contains utility classes for virtual dependencies.
 from itertools import product as iproduct
 from pprint import pformat
 
-import yaml
+import spack.util.spack_yaml as syaml
 from yaml.error import MarkedYAMLError
 
 import spack
@@ -97,34 +97,38 @@ class ProviderIndex(object):
         assert(not spec.virtual)
 
         pkg = spec.package
-        for provided_spec, provider_spec in pkg.provided.iteritems():
-            # We want satisfaction other than flags
-            provider_spec.compiler_flags = spec.compiler_flags.copy()
-            if provider_spec.satisfies(spec, deps=False):
-                provided_name = provided_spec.name
+        for provided_spec, provider_specs in pkg.provided.iteritems():
+            for provider_spec in provider_specs:
+                # TODO: fix this comment.
+                # We want satisfaction other than flags
+                provider_spec.compiler_flags = spec.compiler_flags.copy()
 
-                provider_map = self.providers.setdefault(provided_name, {})
-                if provided_spec not in provider_map:
-                    provider_map[provided_spec] = set()
+                if spec.satisfies(provider_spec, deps=False):
+                    provided_name = provided_spec.name
 
-                if self.restrict:
-                    provider_set = provider_map[provided_spec]
+                    provider_map = self.providers.setdefault(provided_name, {})
+                    if provided_spec not in provider_map:
+                        provider_map[provided_spec] = set()
 
-                    # If this package existed in the index before,
-                    # need to take the old versions out, as they're
-                    # now more constrained.
-                    old = set([s for s in provider_set if s.name == spec.name])
-                    provider_set.difference_update(old)
+                    if self.restrict:
+                        provider_set = provider_map[provided_spec]
 
-                    # Now add the new version.
-                    provider_set.add(spec)
+                        # If this package existed in the index before,
+                        # need to take the old versions out, as they're
+                        # now more constrained.
+                        old = set(
+                            [s for s in provider_set if s.name == spec.name])
+                        provider_set.difference_update(old)
 
-                else:
-                    # Before putting the spec in the map, constrain it so that
-                    # it provides what was asked for.
-                    constrained = spec.copy()
-                    constrained.constrain(provider_spec)
-                    provider_map[provided_spec].add(constrained)
+                        # Now add the new version.
+                        provider_set.add(spec)
+
+                    else:
+                        # Before putting the spec in the map, constrain
+                        # it so that it provides what was asked for.
+                        constrained = spec.copy()
+                        constrained.constrain(provider_spec)
+                        provider_map[provided_spec].add(constrained)
 
     def providers_for(self, *vpkg_specs):
         """Gives specs of all packages that provide virtual packages
@@ -190,13 +194,13 @@ class ProviderIndex(object):
             lambda vpkg, pset: [
                 vpkg.to_node_dict(), [p.to_node_dict() for p in pset]], list)
 
-        yaml.dump({'provider_index': {'providers': provider_list}},
-                  stream=stream)
+        syaml.dump({'provider_index': {'providers': provider_list}},
+                   stream=stream)
 
     @staticmethod
     def from_yaml(stream):
         try:
-            yfile = yaml.load(stream)
+            yfile = syaml.load(stream)
         except MarkedYAMLError, e:
             raise spack.spec.SpackYAMLError(
                 "error parsing YAML ProviderIndex cache:", str(e))

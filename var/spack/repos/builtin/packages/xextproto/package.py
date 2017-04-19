@@ -25,7 +25,7 @@
 from spack import *
 
 
-class Xextproto(Package):
+class Xextproto(AutotoolsPackage):
     """X Protocol Extensions."""
 
     homepage = "http://cgit.freedesktop.org/xorg/proto/xextproto"
@@ -36,7 +36,4 @@ class Xextproto(Package):
     depends_on('pkg-config@0.9.0:', type='build')
     depends_on('util-macros', type='build')
 
-    def install(self, spec, prefix):
-        configure('--prefix={0}'.format(prefix))
-
-        make('install')
+    parallel = False

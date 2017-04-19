@@ -23,6 +23,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 ##############################################################################
 from spack import *
+import sys
 
 
 class Mvapich2(Package):
@@ -94,7 +95,7 @@ class Mvapich2(Package):
 
     # FIXME : CUDA support is missing
     depends_on('bison')
-    depends_on('libpciaccess')
+    depends_on('libpciaccess', when=(sys.platform != 'darwin'))
 
     def url_for_version(self, version):
         base_url = "http://mvapich.cse.ohio-state.edu/download"
@@ -209,7 +210,7 @@ class Mvapich2(Package):
            self.version > Version('2.0'):
             run_env.set('SLURM_MPI_TYPE', 'pmi2')
 
-    def setup_dependent_environment(self, spack_env, run_env, extension_spec):
+    def setup_dependent_environment(self, spack_env, run_env, dependent_spec):
         spack_env.set('MPICC',  join_path(self.prefix.bin, 'mpicc'))
         spack_env.set('MPICXX', join_path(self.prefix.bin, 'mpicxx'))
         spack_env.set('MPIF77', join_path(self.prefix.bin, 'mpif77'))
@@ -221,7 +222,7 @@ class Mvapich2(Package):
         spack_env.set('MPICH_F90', spack_fc)
         spack_env.set('MPICH_FC', spack_fc)
 
-    def setup_dependent_package(self, module, dep_spec):
+    def setup_dependent_package(self, module, dependent_spec):
         self.spec.mpicc  = join_path(self.prefix.bin, 'mpicc')
         self.spec.mpicxx = join_path(self.prefix.bin, 'mpicxx')
         self.spec.mpifc  = join_path(self.prefix.bin, 'mpif90')
@@ -232,6 +233,13 @@ class Mvapich2(Package):
         ]
 
     def install(self, spec, prefix):
+        # Until we can pass variants such as +fortran through virtual
+        # dependencies depends_on('mpi'), require Fortran compiler to
+        # avoid delayed build errors in dependents.
+        if (self.compiler.f77 is None) or (self.compiler.fc is None):
+            raise InstallError('Mvapich2 requires both C and Fortran ',
+                               'compilers!')
+
         # we'll set different configure flags depending on our
         # environment
         configure_args = [

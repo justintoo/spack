@@ -2,7 +2,7 @@
 ============
 
 [![Build Status](https://travis-ci.org/LLNL/spack.svg?branch=develop)](https://travis-ci.org/LLNL/spack)
-[![Coverage Status](https://coveralls.io/repos/github/LLNL/spack/badge.svg?branch=develop)](https://coveralls.io/github/LLNL/spack?branch=develop)
+[![codecov](https://codecov.io/gh/LLNL/spack/branch/develop/graph/badge.svg)](https://codecov.io/gh/LLNL/spack)
 
 Spack is a package management tool designed to support multiple
 versions and configurations of software on a wide variety of platforms
@@ -34,6 +34,9 @@ Documentation
 
 [**Full documentation**](http://spack.readthedocs.io/) for Spack is
 the first place to look.
+
+We've also got a [**Spack 101 Tutorial**](http://spack.readthedocs.io/en/latest/tutorial_sc16.html),
+so you can learn Spack yourself, or teach users at your own site.
 
 See also:
   * [Technical paper](http://www.computer.org/csdl/proceedings/sc/2015/3723/00/2807623.pdf) and
