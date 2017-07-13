@@ -49,6 +49,9 @@ class Rose(Package):
     depends_on("libtool@2.4")
     depends_on("__BOOST_VERSION__")
 
+     variant('debug', default=False, description='Enable compiler debugging symbols')
+     variant('optimized', default=False, description='Enable compiler optimizations')
+
     def validate_toolchain(self, spec):
         if not (spec.satisfies("%gcc@4.8.5") or spec.satisfies("%intel@16.0.3")):
             raise Exception("You are trying to use an unsupported compiler version to compile ROSE. The ROSE package currently only supports package compilation with GCC 4.8.5 or Intel 16.0.3")
@@ -73,6 +76,9 @@ class Rose(Package):
 
             configure = Executable(os.path.abspath('../configure'))
             configure("--prefix=" + prefix,
+                      '--with-CXX_DEBUG=-g' if '+debug' in spec else '',
+                      '--with-C_OPTIMIZE=-O0' if '+optimized' in spec else '',
+                      '--with-CXX_OPTIMIZE=-O0' if '+optimized' in spec else '',
                       "--enable-edg_version=4.12",
                       "--without-java",
                       "--with-boost=" + boost.prefix,
