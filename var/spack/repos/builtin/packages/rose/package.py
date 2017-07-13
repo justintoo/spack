@@ -90,5 +90,6 @@ class Rose(Package):
             srun = which('srun')
             srun('-ppdebug', 'make', '-j16', 'install-core')
             make("install", "-C", "bin/")
+            make("install", "-C", "tools/")
             #make("check")
 
