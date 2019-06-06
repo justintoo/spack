@@ -17,11 +17,15 @@ class Rose(AutotoolsPackage):
 
     homepage = "http://rosecompiler.org/"
     # url = "https://github.com/rose-compiler/rose-develop/archive/v0.9.7.0.tar.gz"
-    url = "https://github.com/rose-compiler/rose-develop/archive/v0.9.9.104.zip"
+    url = "https://github.com/rose-compiler/rose/archive/v0.9.9.104.zip"
 
     # --------------------------------------------------------------------------
     # ROSE Versions
     # --------------------------------------------------------------------------
+    version(
+        '0.9.11.24',
+        sha256='8196307ff50dd668b35dbe5ddbc24dc6b4c883b0db973e90e722257b6365ffa5'
+    )
     version(
         "0.9.10.0",
         sha256="7b53b6913fd6ca0c5050b630dae380f3e6b0897cde6148172ba01095f71cbaca",
@@ -113,15 +117,18 @@ class Rose(AutotoolsPackage):
     def patch(self):
         spec = self.spec
 
-        # ROSE needs its   to compute its EDG
+        # ROSE needs to compute its EDG
         # binary compatibility signature for C/C++ and for its
         # --version information.
         #
-        #       git rev-parse HEAD
+        #     git rev-parse HEAD
         #     git log -1 --format="%at"
         #
         with open("VERSION", "w") as f:
-            if "@0.9.9.104:" in spec:
+            if "@0.9.11.24:" in spec:
+                # EDG: 8c2847a7155821f75f12640473fb50ed91c28c85
+                f.write("78452b98ad6f49c46f2531a80740dbd1740b0307 1559852369")
+            elif "@0.9.9.104:" in spec:
                 # EDG: 27acd506c6b0e4b1c5f7573c642e3e407237eddd
                 f.write("66c87e9395126a7ab8663d81f0e0b99d6e09131e 1504924600")
             elif "@0.9.9.0:" in spec:
